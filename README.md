@@ -5,7 +5,7 @@ author: vibronet
 ---
 
 # Integrate Microsoft identity and the Microsoft Graph into a web application using OpenID Connect
-REWORD
+
 This sample showcases how to develop a web application that handles sign on via the unified Azure AD and MSA endpoint, so that users can sign in to the app using both their work/school account or Microsoft account. The application is implemented with ASP.NET MVC 4.6, while the web sign on functionality is implemented via ASP.NET OpenId Connect OWIN middleware.  
 The sample also shows how to use MSAL (Microsoft Authentication Library) to obtain a token for invoking the Microsoft Graph. Specifically, the sample shows how to visualize the last email messages received by the signed in user, and how to send a mail message as the user. 
 Finally, the sample showcases a new capability introduced by the new authentication endpoint - the ability for one app to ask for new permissions incrementally. 
