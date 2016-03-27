@@ -9,9 +9,6 @@ REWORD
 This sample showcases how to develop a web application that handles sign on via the unified Azure AD and MSA endpoint, so that users can sign in to the app using both their work/school account or Microsoft account. The application is implemented with ASP.NET MVC 4.6, while the web sign on functionality is implemented via ASP.NET OpenId Connect OWIN middleware.  
 The sample also shows how to use MSAL (Microsoft Authentication Library) to obtain a token for invoking the Microsoft Graph. Specifically, the sample shows how to visualize the last email messages received by the signed in user, and how to send a mail message as the user. 
 Finally, the sample showcases a new capability introduced by the new authentication endpoint - the ability for one app to ask for new permissions incrementally. 
-Sign in, incremental consent, Reading and sending mail via MS Graph, sign out
-END REWORD
-dependencies: account with access to email (exchange for commercial, outlook.com for consumer)
 
 For more information about how the protocols work in this scenario and other scenarios, see [Authentication Scenarios for Azure AD](http://go.microsoft.com/fwlink/?LinkId=394414).
 For more information about Microsoft Graph, please visit [the Microsoft Graph homepage](https://graph.microsoft.io/en-us/).
@@ -74,27 +71,29 @@ Here there's a quick guide to the most interesting authentication related bits o
 ###Sign in 
 As it is standard practice for ASP.NET MVC apps, the sign in functionality is implemented with the OpenID Connect OWIN middleware. Here there's a relevant snippet from the middleware initialization:  
 
+```
 app.UseOpenIdConnectAuthentication(
-new OpenIdConnectAuthenticationOptions
-{
-// The `Authority` represents the v2.0 endpoint - https://login.microsoftonline.com/common/v2.0
-ClientId = clientId,
-Authority = String.Format(CultureInfo.InvariantCulture, aadInstance, "common", "/v2.0"),
-RedirectUri = redirectUri,
-Scope = "openid email profile offline_access Mail.Read",
-PostLogoutRedirectUri = redirectUri,
-TokenValidationParameters = new TokenValidationParameters
-{
-ValidateIssuer = false,
-// In a real application you would use IssuerValidator for additional checks, like making s
-// IssuerValidator = (issuer, token, tvp) =>
-// {
-////if(MyCustomTenantValidation(issuer)) 
-//return issuer;
-////else
-////throw new SecurityTokenInvalidIssuerException("Invalid issuer");
-//},
+    new OpenIdConnectAuthenticationOptions
+    {
+        // The `Authority` represents the v2.0 endpoint - https://login.microsoftonline.com/common/v2.0
+        ClientId = clientId,
+        Authority = String.Format(CultureInfo.InvariantCulture, aadInstance, "common", "/v2.0"),
+        RedirectUri = redirectUri,
+        Scope = "openid email profile offline_access Mail.Read",
+        PostLogoutRedirectUri = redirectUri,
+        TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            // In a real application you would use IssuerValidator for additional checks, like making s
+            // IssuerValidator = (issuer, token, tvp) =>
+            // {
+            ////if(MyCustomTenantValidation(issuer)) 
+            //return issuer;
+            ////else
+            ////throw new SecurityTokenInvalidIssuerException("Invalid issuer");
+        //},
 },
+```
 Important things to notice:
 - The Authority points to the new authentication endpoint which supports both personal and work&school accounts.
 - the list of scopes includes both entries that are used for the sign in function (`openid, email, profile`) and for the token acquisition function (`offline_access` is required to obtain refresh_tokens as well; `Mail.Read` is required for getting access tokens that can be used when requesting tor ead the user's mail). 
@@ -104,8 +103,10 @@ Important things to notice:
 This sample makes use of OpenId Connect hybrid flow, where at authentication time the app receives both sign in info (the id_token) and artifacts (in this case, an authorization code) that the app can use for obtaining an access token. That token can be used to access other resources - in this sample, the Microsoft Graph, for the purpose of reading the user's mailbox.
 This sample shows how to use MSAL to redeem the authorization code into an access token, which is saved in a cache along with any other useful artifact (such as associated refresh_tokens) so that it can be used later on in the application.
 The redemption takes place in the `AuthorizationCodeReceived` notification of the authorization middleware. Here there's the relevant code:
-    AuthorizationCodeReceived = async (context) =>
-    {
+
+```
+AuthorizationCodeReceived = async (context) =>
+{
     var code = context.Code;
     string signedInUserID = context.AuthenticationTicket.Identity.FindFirst(ClaimTypes.NameIdentifier).Value;
     ConfidentialClientApplication cca = new ConfidentialClientApplication(clientId, redirectUri,
@@ -116,7 +117,8 @@ The redemption takes place in the `AuthorizationCodeReceived` notification of th
     {
     AuthenticationResult result = await cca.AcquireTokenByAuthorizationCodeAsync(scopes, code);
     }
-    
+```
+
 Important things to notice:
 - The `ConfidentialClientApplication` is the primitive that MSAL uses to model the application.As such, it is initialized with the main application's coordinates.
 - `MSALSessionCache` is a sample implementation of a custom MSAL token cache, which saves tokens in the current HTTP session. In a real life applciaiton you would likely want to save tokens in a long lived store instead, so that you don't need to retrieve new ones more often than necessary.
@@ -124,11 +126,14 @@ Important things to notice:
 
 ###Using access tokens in the app, handling token expiration
 The `ReadMail` action in the `HomeController` class demonstrates how to take advantage of MSAL for getting access to protected API easily and securely. Here there's the relevant code:
-    string signedInUserID = ClaimsPrincipal.Current.FindFirst(ClaimTypes.NameIdentifier).Value;
-    ConfidentialClientApplication cca = new ConfidentialClientApplication(clientId, null,
-    new ClientCredential(appKey), new MSALSessionCache(signedInUserID, this.HttpContext)); 
-    string[] scopes = { "Mail.Read" };
-    AuthenticationResult result = await cca.AcquireTokenSilentAsync(scopes);
+
+```
+string signedInUserID = ClaimsPrincipal.Current.FindFirst(ClaimTypes.NameIdentifier).Value;
+ConfidentialClientApplication cca = new ConfidentialClientApplication(clientId, null,
+new ClientCredential(appKey), new MSALSessionCache(signedInUserID, this.HttpContext)); 
+string[] scopes = { "Mail.Read" };
+AuthenticationResult result = await cca.AcquireTokenSilentAsync(scopes);
+```
 The idea is very simple. The code creates a new instance of `ConfidentialClientApplication` with the exact same coordinates as the ones used when redeeming the authorization code at authentication time.In particular, note that the exact same cache is used.
 That done, all you need to do is to invoke `AcquireTokenSilentAsync`, asking for the scopes you need. MSAL will look up the cache and return any cached token which match with the requirement. If such access tokens are expired or no suitable access tokens are present, but there is an associated refresh token, MSAL will automatically use that to get a new access token and return it transparently.    
 
@@ -144,20 +149,23 @@ When the user clicks that link, they are brought through the authorization flow 
 This sample works around that limitation by providing a simple custom middleware, which takes care of intercepting messages containing authorization codes, validating them, redeeming the code and saving the resulting tokens in a MSAL cache, and finally redirecting to the URL that originated the request.
 Back in Startup.Auth.cs, you can see the custom middleware initialization logic right between the cookie middleware and the OpenId Connect middleware. The position in the pipeline is very important, as in order to saver the tokens in the correct cache the custom middleware needs to know who the current user is.   
 
+```
 app.UseCookieAuthentication(new CookieAuthenticationOptions());
 
 app.UseOAuth2CodeRedeemer(
-new OAuth2CodeRedeemerOptions
-{
-ClientId = clientId,
-ClientSecret = appKey,
-RedirectUri = redirectUri
-}
+    new OAuth2CodeRedeemerOptions
+    {
+       ClientId = clientId,
+       ClientSecret = appKey,
+       RedirectUri = redirectUri
+    }
 );
 
 app.UseOpenIdConnectAuthentication(
 
-Please note that the custom middleware is provided only as an example, and it has numerous limitations (like a hard dependency on MSALSessionCache) that limit its applicability outside of this scenario. 
+```
+
+Please note that the custom middleware is provided only as an example, and it has numerous limitations (like a hard dependency on `MSALSessionCache`) that limit its applicability outside of this scenario. 
 
 ## More information
 For more information, please visit the [new documentation homepage for Microsoft identity](http://aka.ms/aaddevv2). 
