@@ -53,7 +53,7 @@ Create a new app at [apps.dev.microsoft.com](https://apps.dev.microsoft.com), or
 
 Clean the solution, rebuild the solution, and run it.
 
-Click the sign-in link on the homepage of the application to sign-in.  On the sign-in page, enter the name and password of a personal Microsoft account or a work/school account. The sample works exactly in the same way regardless of the account type you choose, apart from some visual differences in the authentication and consent experience.During the sign in process, you will be prompted to grant various permissions - including the ability for the app to read the user's email.   
+Click the sign-in link on the homepage of the application to sign-in.  On the sign-in page, enter the name and password of a personal Microsoft account or a work/school account. The sample works exactly in the same way regardless of the account type you choose, apart from some visual differences in the authentication and consent experience. During the sign in process, you will be prompted to grant various permissions - including the ability for the app to read the user's email.   
 
 > Remember, the account you choose must have access to an email inbox. If you are using an MSA and the email features don't work, your account might still not have been migrated to the new API. The fastest workaround is to create a new test *@outlook.com account, see the beginning of the readme for instructions. 
 
