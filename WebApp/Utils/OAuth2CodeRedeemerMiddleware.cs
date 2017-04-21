@@ -43,9 +43,9 @@ namespace WebApp.Utils
 
                 string signedInUserID = context.Authentication.User.FindFirst(System.IdentityModel.Claims.ClaimTypes.NameIdentifier).Value;
                 HttpContextBase hcb = context.Environment["System.Web.HttpContextBase"] as HttpContextBase;
-                MSALSessionCache theCache = new MSALSessionCache(signedInUserID, hcb);
-                                ConfidentialClientApplication cca = new ConfidentialClientApplication(options.ClientId, options.RedirectUri,
-                   new ClientCredential(options.ClientSecret), theCache);
+                TokenCache userTokenCache = new MSALSessionCache(signedInUserID, hcb).GetMsalCacheInstance();
+                ConfidentialClientApplication cca = 
+                    new ConfidentialClientApplication(options.ClientId, options.RedirectUri, new ClientCredential(options.ClientSecret), userTokenCache, null);
 
                 //validate state
                 CodeRedeptionData crd = OAuth2RequestManager.ValidateState(state, hcb);
@@ -55,7 +55,7 @@ namespace WebApp.Utils
                  //redeem code                   
                     try
                     {
-                        AuthenticationResult result = await cca.AcquireTokenByAuthorizationCodeAsync(crd.Scopes, code);
+                        AuthenticationResult result = await cca.AcquireTokenByAuthorizationCodeAsync(code, crd.Scopes);
                     }
                     catch (Exception ee)
                     {
@@ -191,13 +191,16 @@ namespace WebApp.Utils
             string state = GenerateState(httpcontext.Request.Url.ToString(), httpcontext, url, scopes);
             string tenantID = ClaimsPrincipal.Current.FindFirst("http://schemas.microsoft.com/identity/claims/tenantid").Value;
             string domain_hint = (tenantID == "9188040d-6c67-4c5b-b112-36a304b66dad") ? "consumers" : "organizations";
-            Uri authzMessageUri = await cca.GetAuthorizationRequestUrlAsync(scopes,
+            Uri authzMessageUri =
+                await cca.GetAuthorizationRequestUrlAsync(
+                    scopes,
                 oauthCodeProcessingPath.ToString(),
                 preferredUsername, 
                 state == null ? null : "&state=" + state + "&domain_hint=" + domain_hint,
                 null,
-                cca.Authority,
-                null);
+                // TODo change
+                //cca.Authority,
+                "https://login.microsoftonline.com/common");
             return authzMessageUri.ToString();
 
         }
