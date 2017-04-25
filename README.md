@@ -4,7 +4,7 @@ platforms: dotnet
 author: vibronet
 ---
 
-# CODE NOT YET UPDATED TO MSAL preview 2017 #
+# UPDATED TO MSAL preview 2017 - works (incremental consent untested) #
 
 # Integrate Microsoft identity and the Microsoft Graph into a web application using OpenID Connect
 
