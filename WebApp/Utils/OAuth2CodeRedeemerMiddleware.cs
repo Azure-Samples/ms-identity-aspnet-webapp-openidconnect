@@ -199,8 +199,8 @@ namespace WebApp.Utils
                 state == null ? null : "&state=" + state + "&domain_hint=" + domain_hint,
                 null,
                 // TODo change
-                //cca.Authority,
-                "https://login.microsoftonline.com/common");
+                cca.Authority
+                );
             return authzMessageUri.ToString();
 
         }
