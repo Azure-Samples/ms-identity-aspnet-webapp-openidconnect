@@ -156,8 +156,8 @@ namespace WebApp.Controllers
                 string signedInUserID = ClaimsPrincipal.Current.FindFirst(ClaimTypes.NameIdentifier).Value;
                 TokenCache userTokenCache = new MSALSessionCache(signedInUserID, this.HttpContext).GetMsalCacheInstance();
 
-
-                ConfidentialClientApplication cca = new ConfidentialClientApplication(clientId, redirectUri, new ClientCredential(appKey), userTokenCache, null);
+                ConfidentialClientApplication cca = 
+                    new ConfidentialClientApplication(clientId, redirectUri, new ClientCredential(appKey), userTokenCache, null);
                 if (cca.Users.Count() > 0)
                 {
                     string[] scopes = { "Mail.Read" };
