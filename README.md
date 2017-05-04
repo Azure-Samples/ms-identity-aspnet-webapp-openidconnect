@@ -4,8 +4,6 @@ platforms: dotnet
 author: vibronet
 ---
 
-# UPDATED TO MSAL preview 2017 - works (incremental consent untested) #
-
 # Integrate Microsoft identity and the Microsoft Graph into a web application using OpenID Connect
 
 This sample showcases how to develop a web application that handles sign on via the unified Azure AD and MSA endpoint, so that users can sign in to the app using both their work/school account or Microsoft account. The application is implemented with ASP.NET MVC 4.6, while the web sign on functionality is implemented via ASP.NET OpenId Connect OWIN middleware.  
@@ -18,11 +16,11 @@ For more information about Microsoft Graph, please visit [the Microsoft Graph ho
 ## How To Run This Sample
 
 To run this sample you will need:
-- Visual Studio 2015
+- Visual Studio 2017
 - An Internet connection
 - At least one of the following accounts:
-- - A Microsoft Account with access to an outlook.com enabled mailbox
-- - An Azure AD account with access to an Office 365 mailbox
+- A Microsoft Account with access to an outlook.com enabled mailbox
+- An Azure AD account with access to an Office 365 mailbox
 
 You can get a Microsoft Account and outlook.com mailbox for free by choosing the Sign up option while visiting [https://www.microsoft.com/en-us/outlook-com/](https://www.microsoft.com/en-us/outlook-com/). 
 You can get an Office365 office subscription, which will give you both an Azure AD account and a mailbox, at [https://products.office.com/en-us/try](https://products.office.com/en-us/try). 
@@ -99,7 +97,7 @@ app.UseOpenIdConnectAuthentication(
 Important things to notice:
 - The Authority points to the new authentication endpoint which supports both personal and work&school accounts.
 - the list of scopes includes both entries that are used for the sign in function (`openid, email, profile`) and for the token acquisition function (`offline_access` is required to obtain refresh_tokens as well; `Mail.Read` is required for getting access tokens that can be used when requesting tor ead the user's mail). 
-- In this sample the issuer validation is turned off, which means that anybody with an account can access the application. Real life applications would likely be more restrictive, limiting access only to those Azure AD tenants or Microsoft accounts associated to customers of the application itself. In other words, real life applciations would likely also have a sign up function - and the sign in would enforce that only the users who previously signed up have access. For simplicitly, this sample does not include sign up features.     
+- In this sample the issuer validation is turned off, which means that anybody with an account can access the application. Real life applications would likely be more restrictive, limiting access only to those Azure AD tenants or Microsoft accounts associated to customers of the application itself. In other words, real life applications would likely also have a sign up function - and the sign in would enforce that only the users who previously signed up have access. For simplicity, this sample does not include sign up features.     
 
 ###Initial token acquisition
 This sample makes use of OpenId Connect hybrid flow, where at authentication time the app receives both sign in info (the id_token) and artifacts (in this case, an authorization code) that the app can use for obtaining an access token. That token can be used to access other resources - in this sample, the Microsoft Graph, for the purpose of reading the user's mailbox.
@@ -111,41 +109,48 @@ AuthorizationCodeReceived = async (context) =>
 {
     var code = context.Code;
     string signedInUserID = context.AuthenticationTicket.Identity.FindFirst(ClaimTypes.NameIdentifier).Value;
-    ConfidentialClientApplication cca = new ConfidentialClientApplication(clientId, redirectUri,
-       new ClientCredential(appKey), 
-       new MSALSessionCache(signedInUserID, context.OwinContext.Environment["System.Web.HttpContextBase"] as HttpContextBase));
+    TokenCache userTokenCache = new MSALSessionCache(signedInUserID, 
+        context.OwinContext.Environment["System.Web.HttpContextBase"] as HttpContextBase).GetMsalCacheInstance();    
+    ConfidentialClientApplication cca =
+        new ConfidentialClientApplication(clientId, redirectUri, new ClientCredential(appKey), userTokenCache,null);
     string[] scopes = { "Mail.Read" };
     try
     {
-    AuthenticationResult result = await cca.AcquireTokenByAuthorizationCodeAsync(scopes, code);
+        AuthenticationResult result = await cca.AcquireTokenByAuthorizationCodeAsync(code, scopes);
     }
+
 ```
 
 Important things to notice:
 - The `ConfidentialClientApplication` is the primitive that MSAL uses to model the application.As such, it is initialized with the main application's coordinates.
-- `MSALSessionCache` is a sample implementation of a custom MSAL token cache, which saves tokens in the current HTTP session. In a real life applciaiton you would likely want to save tokens in a long lived store instead, so that you don't need to retrieve new ones more often than necessary.
+- `MSALSessionCache` is a sample implementation of a custom MSAL token cache, which saves tokens in the current HTTP session. In a real-life application, you would likely want to save tokens in a long lived store instead, so that you don't need to retrieve new ones more often than necessary.
 - The scope requested by `AcquireTokenByAuthorizationCodeAsync` is just the one required for invoking the API targeted by the application as part of its essential features. We'll see later that the app allows for extra scopes, but you can ignore those at this point. 
 
 ###Using access tokens in the app, handling token expiration
 The `ReadMail` action in the `HomeController` class demonstrates how to take advantage of MSAL for getting access to protected API easily and securely. Here there's the relevant code:
 
 ```
-string signedInUserID = ClaimsPrincipal.Current.FindFirst(ClaimTypes.NameIdentifier).Value;
-ConfidentialClientApplication cca = new ConfidentialClientApplication(clientId, null,
-new ClientCredential(appKey), new MSALSessionCache(signedInUserID, this.HttpContext)); 
-string[] scopes = { "Mail.Read" };
-AuthenticationResult result = await cca.AcquireTokenSilentAsync(scopes);
+ string signedInUserID = ClaimsPrincipal.Current.FindFirst(ClaimTypes.NameIdentifier).Value;
+ TokenCache userTokenCache = new MSALSessionCache(signedInUserID, this.HttpContext).GetMsalCacheInstance();
+
+ ConfidentialClientApplication cca = 
+     new ConfidentialClientApplication(clientId, redirectUri, new ClientCredential(appKey), userTokenCache, null);
+ if (cca.Users.Count() > 0)
+ {
+     string[] scopes = { "Mail.Read" };
+     AuthenticationResult result = await cca.AcquireTokenSilentAsync(scopes, cca.Users.First());
+
 ```
 The idea is very simple. The code creates a new instance of `ConfidentialClientApplication` with the exact same coordinates as the ones used when redeeming the authorization code at authentication time.In particular, note that the exact same cache is used.
 That done, all you need to do is to invoke `AcquireTokenSilentAsync`, asking for the scopes you need. MSAL will look up the cache and return any cached token which match with the requirement. If such access tokens are expired or no suitable access tokens are present, but there is an associated refresh token, MSAL will automatically use that to get a new access token and return it transparently.    
 
-In the case in which refresh tokens are not present or they fail to obtain a new access token, MSAL will throw `MsalSilentTokenAcquisitionException`. That means that in order to obtain the requested token, the user must go through an interactive experience.
+In the case in which refresh tokens are not present or they fail to obtain a new access token, MSAL will throw `MsalUiRequiredException`. That means that in order to obtain the requested token, the user must go through an interactive experience.
 In the case of this sample, the Mail.Read permission is obtained as part of the login process - hence we need to trigger a new login; however we can't just redirect the user without warning, as it might be disorienting (what is happening, or why, would not be obvious to the user) and there might still be things they can do with the app that do not entail accessing mail. For that reason, the sample simply signals to the view to show a warning - and to offer a link to an action (`RefreshSession`) that the user can leverage for explicitly initiating the re-authentication process. 
 
 ###Handling incremental consent and OAuth2 code redemption 
 The `SendMail` action demonstrates how to perform operations that require incremental consent. 
-Observe the structure of the GET overload of that action. The code follows the same structure as the one you saw in `ReadMail`: the difference is in how `MsalSilentTokenAcquisitionException` is handled.
-The application did not ask for Mail.Send during sign in, hence the failure to obtain a token silently could have been caused by the fact that the user did not yet granted consent for the app to use this permission. Instead of triggering a new sign in as we have done in ReadMail, here we can craft a specific authorization request for this permission. The call to the utility function `GenerateAuthorizationRequestUrl` does precisely that, leveraging MSAL to generate an OAuth2/OpenId Connect request for an authorization code for the Mail.Send permission.
+Observe the structure of the GET overload of that action. The code follows the same structure as the one you saw in `ReadMail`: the difference is in how `MsalUiRequiredException` is handled.
+The application did not ask for Mail.Send during sign in, hence the failure to obtain a token silently could have been caused by the fact that the user did not yet granted consent for the app to use this permission. Instead of triggering a new sign in as we have done in `ReadMail`, here we can craft a specific authorization request for this permission. The call to the utility function `GenerateAuthorizationRequestUrl` does precisely that, leveraging MSAL to generate an OAuth2/OpenId Connect request for an authorization code for the Mail.Send permission.
 That request, which is in fact a URL, is injected in the view as a hyperlink: once again, the user sees that link as part of a warning that the current operation requires leaving the app and going back to the authentication and consent pages.   
 When the user clicks that link, they are brought through the authorization flow that eventually leads to the app receiving an authorization code that can be redeemed for an access token containing the scope requested. However, the standard collection of OWIN middlewares doesn't include anything that can be used for redeeming an authorization code for access and refresh tokens outside of a sign in flow.
 This sample works around that limitation by providing a simple custom middleware, which takes care of intercepting messages containing authorization codes, validating them, redeeming the code and saving the resulting tokens in a MSAL cache, and finally redirecting to the URL that originated the request.
