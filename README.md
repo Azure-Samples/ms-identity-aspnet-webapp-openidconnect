@@ -68,7 +68,7 @@ Sign in again with the same user, and follow the exact same steps described so f
 Coming soon...
 ## About the code
 Here there's a quick guide to the most interesting authentication related bits of the sample.
-###Sign in 
+### Sign in 
 As it is standard practice for ASP.NET MVC apps, the sign in functionality is implemented with the OpenID Connect OWIN middleware. Here there's a relevant snippet from the middleware initialization:  
 
 ```
@@ -99,7 +99,7 @@ Important things to notice:
 - the list of scopes includes both entries that are used for the sign in function (`openid, email, profile`) and for the token acquisition function (`offline_access` is required to obtain refresh_tokens as well; `Mail.Read` is required for getting access tokens that can be used when requesting tor ead the user's mail). 
 - In this sample the issuer validation is turned off, which means that anybody with an account can access the application. Real life applications would likely be more restrictive, limiting access only to those Azure AD tenants or Microsoft accounts associated to customers of the application itself. In other words, real life applications would likely also have a sign up function - and the sign in would enforce that only the users who previously signed up have access. For simplicity, this sample does not include sign up features.     
 
-###Initial token acquisition
+### Initial token acquisition
 This sample makes use of OpenId Connect hybrid flow, where at authentication time the app receives both sign in info (the id_token) and artifacts (in this case, an authorization code) that the app can use for obtaining an access token. That token can be used to access other resources - in this sample, the Microsoft Graph, for the purpose of reading the user's mailbox.
 This sample shows how to use MSAL to redeem the authorization code into an access token, which is saved in a cache along with any other useful artifact (such as associated refresh_tokens) so that it can be used later on in the application.
 The redemption takes place in the `AuthorizationCodeReceived` notification of the authorization middleware. Here there's the relevant code:
@@ -126,7 +126,7 @@ Important things to notice:
 - `MSALSessionCache` is a sample implementation of a custom MSAL token cache, which saves tokens in the current HTTP session. In a real-life application, you would likely want to save tokens in a long lived store instead, so that you don't need to retrieve new ones more often than necessary.
 - The scope requested by `AcquireTokenByAuthorizationCodeAsync` is just the one required for invoking the API targeted by the application as part of its essential features. We'll see later that the app allows for extra scopes, but you can ignore those at this point. 
 
-###Using access tokens in the app, handling token expiration
+### Using access tokens in the app, handling token expiration
 The `ReadMail` action in the `HomeController` class demonstrates how to take advantage of MSAL for getting access to protected API easily and securely. Here there's the relevant code:
 
 ```
@@ -147,7 +147,7 @@ That done, all you need to do is to invoke `AcquireTokenSilentAsync`, asking for
 In the case in which refresh tokens are not present or they fail to obtain a new access token, MSAL will throw `MsalUiRequiredException`. That means that in order to obtain the requested token, the user must go through an interactive experience.
 In the case of this sample, the Mail.Read permission is obtained as part of the login process - hence we need to trigger a new login; however we can't just redirect the user without warning, as it might be disorienting (what is happening, or why, would not be obvious to the user) and there might still be things they can do with the app that do not entail accessing mail. For that reason, the sample simply signals to the view to show a warning - and to offer a link to an action (`RefreshSession`) that the user can leverage for explicitly initiating the re-authentication process. 
 
-###Handling incremental consent and OAuth2 code redemption 
+### Handling incremental consent and OAuth2 code redemption 
 The `SendMail` action demonstrates how to perform operations that require incremental consent. 
 Observe the structure of the GET overload of that action. The code follows the same structure as the one you saw in `ReadMail`: the difference is in how `MsalUiRequiredException` is handled.
 The application did not ask for Mail.Send during sign in, hence the failure to obtain a token silently could have been caused by the fact that the user did not yet granted consent for the app to use this permission. Instead of triggering a new sign in as we have done in `ReadMail`, here we can craft a specific authorization request for this permission. The call to the utility function `GenerateAuthorizationRequestUrl` does precisely that, leveraging MSAL to generate an OAuth2/OpenId Connect request for an authorization code for the Mail.Send permission.
