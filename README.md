@@ -1,7 +1,7 @@
 ---
 services: active-directory
 platforms: dotnet
-author: vibronet
+author: dstrockis
 ---
 
 # Integrate Microsoft identity and the Microsoft Graph into a web application using OpenID Connect
