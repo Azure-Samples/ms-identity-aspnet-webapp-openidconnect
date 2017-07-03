@@ -157,7 +157,7 @@ namespace WebApp.Utils
         {
             try
             {
-                var stateBits = Convert.FromBase64String(state);
+                var stateBits = Convert.FromBase64String(HttpUtility.UrlDecode(state));
                 var formatter = new BinaryFormatter();
                 var stream = new MemoryStream(stateBits);
                 List<String> stateList = (List<String>)formatter.Deserialize(stream);
