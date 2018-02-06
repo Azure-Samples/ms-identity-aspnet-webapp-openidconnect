@@ -38,7 +38,7 @@ namespace WebApp.Utils
             if(code!=null)
             {
                 //extract state
-                string state = context.Request.Query["state"];
+                string state = HttpUtility.UrlDecode(context.Request.Query["state"]);
                 string session_state = context.Request.Query["session_state"];
 
                 string signedInUserID = context.Authentication.User.FindFirst(System.IdentityModel.Claims.ClaimTypes.NameIdentifier).Value;
