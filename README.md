@@ -58,7 +58,7 @@ Click the sign-in link on the homepage of the application to sign-in.  On the si
 > Remember, the account you choose must have access to an email inbox. If you are using an MSA and the email features don't work, your account might still not have been migrated to the new API. The fastest workaround is to create a new test *@outlook.com account, see the beginning of the readme for instructions. 
 
 As you sign in, the app will change the sign in button into a greeting to the current user - and two new menu commands will appear: Read Mail and Send Mail.
-Click on Read Mail: the app will show a dump of the last few messages from the current user's inbox, as they are received from the Microsoft Graph.
+ Click on Read Mail: the app will show a dump of the last few messages from the current user's inbox, as they are received from the Microsoft Graph.
 Click on Send Mail. As it is the first time you do so, you will receive a message informing you that for the app to receive the permissions to send mail as the user, the user needs to grant additional consent. The message offers a link to initiate the process. Click it, and you will be transported back to the consent experience - where you will be prompted to grant send mail permissions to the app.  
 If you do so, you will be transported back to the application: but this time, you will be presented with a simple experience for authoring an email. Use it to compose and send an email to a mailbox you have access to. Send the message and verify you receive it correctly.
 Hit the sign out link on the top right corner.
@@ -79,7 +79,7 @@ app.UseOpenIdConnectAuthentication(
         ClientId = clientId,
         Authority = String.Format(CultureInfo.InvariantCulture, aadInstance, "common", "/v2.0"),
         RedirectUri = redirectUri,
-        Scope = "openid email profile offline_access Mail.Read",
+        Scope = "openid  profile offline_access Mail.Read Mail.Send",
         PostLogoutRedirectUri = redirectUri,
         TokenValidationParameters = new TokenValidationParameters
         {
