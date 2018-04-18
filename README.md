@@ -68,6 +68,8 @@ Create a new app at [apps.dev.microsoft.com](https://apps.dev.microsoft.com), or
 - Enter the correct **Redirect URI**. The redirect uri indicates to Azure AD where authentication responses should be directed - the default for this tutorial is `https://localhost:44326/`.
 - Add a new **application secret** via the "Generate new password", and save the result in a temporary location - you'll need it in the next step.
 
+Note that we are not adding permissions for reading and sending emails during the app registration as you would do with the [v1 endpoint](https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-integrating-applications). The [Incremental and dynamic consent](https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-v2-compare#incremental-and-dynamic-consent) capability of the V2 endpoint has made this an optional step.
+
 ### Step 3:  Configure the Visual Studio project with your app coordinates
 
 1. Open the solution in Visual Studio 2017.
