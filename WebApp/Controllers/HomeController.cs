@@ -31,7 +31,7 @@ namespace WebApp.Controllers
         }
 
         [Authorize]
-        public async Task<ActionResult> About()
+        public ActionResult About()
         {
             ViewBag.Name = ClaimsPrincipal.Current.FindFirst("name").Value;
             ViewBag.AuthorizationRequest = string.Empty;
@@ -70,7 +70,7 @@ namespace WebApp.Controllers
                     }
                     catch (Exception ee)
                     {
-
+                        Response.Write(ee.Message);
                     }
                 }
             }
@@ -141,7 +141,7 @@ namespace WebApp.Controllers
                     }
                     catch (Exception ee)
                     {
-
+                        Response.Write(ee.Message);
                     }
                 }
             }

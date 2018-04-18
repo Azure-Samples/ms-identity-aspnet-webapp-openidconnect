@@ -1,21 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
-using Owin;
+﻿using Microsoft.Identity.Client;
+using Microsoft.IdentityModel.Protocols;
 using Microsoft.Owin.Security;
 using Microsoft.Owin.Security.Cookies;
+using Microsoft.Owin.Security.Notifications;
 using Microsoft.Owin.Security.OpenIdConnect;
+using Owin;
+using System;
 using System.Configuration;
 using System.Globalization;
-using Microsoft.IdentityModel.Protocols;
-using Microsoft.Owin.Security.Notifications;
-using System.Threading.Tasks;
-using System.IdentityModel.Tokens;
-using Microsoft.Identity.Client;
 using System.IdentityModel.Claims;
-using WebApp_OpenIDConnect_DotNet.Models;
+using System.IdentityModel.Tokens;
+using System.Threading.Tasks;
+using System.Web;
 using WebApp.Utils;
+using WebApp_OpenIDConnect_DotNet.Models;
 
 namespace WebApp
 {
@@ -26,13 +24,13 @@ namespace WebApp
         public static string aadInstance = ConfigurationManager.AppSettings["ida:AADInstance"];
         private static string redirectUri = ConfigurationManager.AppSettings["ida:RedirectUri"];
 
-
         public void ConfigureAuth(IAppBuilder app)
         {
             app.SetDefaultSignInAsAuthenticationType(CookieAuthenticationDefaults.AuthenticationType);
 
             app.UseCookieAuthentication(new CookieAuthenticationOptions());
 
+            // Custom middleware initialization
             app.UseOAuth2CodeRedeemer(
                 new OAuth2CodeRedeemerOptions
                 {
@@ -46,11 +44,11 @@ namespace WebApp
                 new OpenIdConnectAuthenticationOptions
                 {
                     // The `Authority` represents the v2.0 endpoint - https://login.microsoftonline.com/common/v2.0
-                    // The `Scope` describes the initial permissions that your app will need.  See https://azure.microsoft.com/documentation/articles/active-directory-v2-scopes/                    
+                    // The `Scope` describes the initial permissions that your app will need.  See https://azure.microsoft.com/documentation/articles/active-directory-v2-scopes/
                     ClientId = clientId,
                     Authority = String.Format(CultureInfo.InvariantCulture, aadInstance, "common", "/v2.0"),
                     RedirectUri = redirectUri,
-                    Scope = "openid profile offline_access Mail.Read Mail.Send",
+                    Scope = "openid profile offline_access Mail.Read",
                     PostLogoutRedirectUri = redirectUri,
                     TokenValidationParameters = new TokenValidationParameters
                     {
@@ -58,7 +56,7 @@ namespace WebApp
                         // In a real application you would use IssuerValidator for additional checks, like making sure the user's organization has signed up for your app.
                         //     IssuerValidator = (issuer, token, tvp) =>
                         //     {
-                        //        //if(MyCustomTenantValidation(issuer)) 
+                        //        //if(MyCustomTenantValidation(issuer))
                         //        return issuer;
                         //        //else
                         //        //    throw new SecurityTokenInvalidIssuerException("Invalid issuer");
@@ -68,7 +66,6 @@ namespace WebApp
                     {
                         AuthorizationCodeReceived = OnAuthorization,
                         AuthenticationFailed = OnAuthenticationFailed
-
                     }
                 });
         }
@@ -77,18 +74,17 @@ namespace WebApp
         {
             var code = context.Code;
             string signedInUserID = context.AuthenticationTicket.Identity.FindFirst(ClaimTypes.NameIdentifier).Value;
-            TokenCache userTokenCache = new MSALSessionCache(signedInUserID,
-                context.OwinContext.Environment["System.Web.HttpContextBase"] as HttpContextBase).GetMsalCacheInstance();
-            ConfidentialClientApplication cca =
-                new ConfidentialClientApplication(clientId, redirectUri, new ClientCredential(appKey), userTokenCache, null);
+            TokenCache userTokenCache = new MSALSessionCache(signedInUserID, context.OwinContext.Environment["System.Web.HttpContextBase"] as HttpContextBase).GetMsalCacheInstance();
+            ConfidentialClientApplication cca = new ConfidentialClientApplication(clientId, redirectUri, new ClientCredential(appKey), userTokenCache, null);
             string[] scopes = { "Mail.Read" };
+
             try
             {
                 AuthenticationResult result = await cca.AcquireTokenByAuthorizationCodeAsync(code, scopes);
             }
-            catch (Exception eee)
+            catch (Exception ex)
             {
-
+                context.Response.Write(ex.Message);
             }
         }
 
@@ -101,7 +97,5 @@ namespace WebApp
                 return Task.FromResult(0);
             }
         }
-
-
     }
 }
