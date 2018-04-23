@@ -16,7 +16,7 @@ endpoint: AAD V2
 
 This sample showcases how to develop a web application that handles sign on via the unified Azure AD and MSA endpoint, so that users can sign in to the app using both their work/school account or Microsoft account. The application is implemented with ASP.NET MVC 4.6, while the web sign-on functionality is implemented via ASP.NET OpenId Connect OWIN middleware.
 
-The sample also shows how to use MSAL (Microsoft Authentication Library) to obtain a token for invoking the Microsoft Graph. Specifically, the sample shows how to visualize the last email messages received by the signed in user, and how to send a mail message as the user.
+The sample also shows how to use MSAL.NET (Microsoft Authentication Library) to obtain a token for invoking the Microsoft Graph. Specifically, the sample shows how to visualize the last email messages received by the signed in user, and how to send a mail message as the user.
 
 Finally, the sample showcases a new capability introduced by the new authentication endpoint - the ability for one app to ask for new permissions incrementally.
 
@@ -34,7 +34,7 @@ For more information about Microsoft Graph, please visit the [Microsoft Graph ho
 
 You sign in using your personal Microsoft Account in the app. During this flow, the app asks for consent to read your email only. Then, using this app, you can get the contents of your email's inbox using [Microsoft Graph Api](https://developer.microsoft.com/en-us/graph/docs/api-reference/v1.0/api/user_list_messages).
 
-When you want to send an email, the app then proceeds to ask for an additional permission to send emails on your behalf. Once you provide that, it presents you with a screen using which you can send emails. The emails are sent using [Microsoft Graph Api](https://developer.microsoft.com/en-us/graph/docs/api-reference/v1.0/api/message_send).
+When you want to send an email, the app then proceeds to ask for an additional permission to send emails on your behalf. Once you provide that, it presents you with a screen using which you can send emails. The emails are sent using [Microsoft Graph API](https://developer.microsoft.com/en-us/graph/docs/api-reference/v1.0/api/message_send).
 
 ## How To Run This Sample
 
@@ -82,17 +82,29 @@ Clean the solution, rebuild the solution, and run it.
 
 Once you run the `WebApp` web application, you are presented with the standard ASP.NET home page.
 Click on the **Sign-in with Microsoft** link on top-right to trigger the log-in flow.
-![Sign-in](./ReadmeFiles/Sign-in.JPG). On the sign-in page, enter the name and password of a personal Microsoft account or a work/school account. The sample works exactly in the same way regardless of the account type you choose, apart from some visual differences in the authentication and consent experience. During the sign-in process, you will be prompted to grant various permissions - including the ability for the app to read the user's email.![First Consent](./ReadmeFiles/FirstConsent.JPG)
+![Sign-in](./ReadmeFiles/Sign-in.JPG)
+
+On the sign-in page, enter the name and password of a personal Microsoft account or a work/school account. The sample works exactly in the same way regardless of the account type you choose, apart from some visual differences in the authentication and consent experience. During the sign-in process, you will be prompted to grant various permissions - including the ability for the app to read the user's email.
+
+![First Consent](./ReadmeFiles/FirstConsent.jpg)
 
 > Remember, the account you choose must have access to an email inbox. If you are using a MSA and the email features don't work, your account might not have been migrated to the new API. The fastest workaround is to create a new test *@outlook.com account. Please refer to the beginning of this readme for instructions.
 
-As you sign in, the app will change the sign-in button into a greeting to the current user - and two new menu commands will appear: Read Mail and Send Mail.![Post sign-in](./ReadmeFiles/Post sign-in.JPG)
+As you sign in, the app will change the sign-in button into a greeting to the current user - and two new menu commands will appear: Read Mail and Send Mail.
+
+![Post sign-in](./ReadmeFiles/Post sign-in.JPG)
 
 Click on **Read Mail**: the app will show a dump of the last few messages from the current user's inbox, as they are received from the Microsoft Graph.
 
-Click on **Send Mail**. As it is the first time you do so, you will receive a message informing you that for the app to receive the permissions to send mail as the user, the user needs to grant additional consent. The message offers a link to initiate the process. ![Incremental Consent Link](./ReadmeFiles/IncrementalConsentLink.JPG)
+Click on **Send Mail**. As it is the first time you do so, you will receive a message informing you that for the app to receive the permissions to send mail as the user, the user needs to grant additional consent. The message offers a link to initiate the process.
 
-Click it, and you will be transported back to the consent experience, this time it lists just one permission, which is **Send mail as you**.![Incremental Consent prompt](./ReadmeFiles/Incrementalconsent.JPG). Once you have consented to this permission, you will be transported back to the application: but this time, you will be presented with a simple experience for authoring an email. Use it to compose and send an email to a mailbox you have access to. Send the message and verify you receive it correctly.
+![Incremental Consent Link](./ReadmeFiles/IncrementalConsentLink.JPG)
+
+Click it, and you will be transported back to the consent experience, this time it lists just one permission, which is **Send mail as you**.
+
+![Incremental Consent prompt](./ReadmeFiles/Incrementalconsent.JPG)
+
+Once you have consented to this permission, you will be transported back to the application: but this time, you will be presented with a simple experience for authoring an email. Use it to compose and send an email to a mailbox you have access to. Send the message and verify you receive it correctly.
 
 Hit the **sign-out** link on the top right corner.
 
