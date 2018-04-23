@@ -98,7 +98,7 @@ Click on **Read Mail**: the app will show a dump of the last few messages from t
 
 Click on **Send Mail**. As it is the first time you do so, you will receive a message informing you that for the app to receive the permissions to send mail as the user, the user needs to grant additional consent. The message offers a link to initiate the process.
 
-![Incremental Consent Link](./ReadmeFiles/IncrementalConsentLink.JPG)
+![Incremental Consent Link](./ReadmeFiles/IncrementalConsentLink.jpg)
 
 Click it, and you will be transported back to the consent experience, this time it lists just one permission, which is **Send mail as you**.
 
