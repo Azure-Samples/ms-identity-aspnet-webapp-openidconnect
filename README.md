@@ -8,7 +8,7 @@ endpoint: AAD V2
 ---
 # Integrate Microsoft identity and the Microsoft Graph into a web application using OpenID Connect
 
-![Build Badge](https://identitydivision.visualstudio.com/_apis/public/build/definitions/a7934fdd-dcde-4492-a406-7fad6ac00e17/31/badge)
+![Build Badge](https://identitydivision.visualstudio.com/_apis/public/build/definitions/a7934fdd-dcde-4492-a406-7fad6ac00e17/514/badge)
 
 ## About this sample
 
