@@ -24,7 +24,6 @@ namespace WebApp.Controllers
         {
             // Send an OpenID Connect sign-out request.
             HttpContext.GetOwinContext().Authentication.SignOut(OpenIdConnectAuthenticationDefaults.AuthenticationType, CookieAuthenticationDefaults.AuthenticationType);
-            //Response.Redirect("/");
         }
-	}
+    }
 }
