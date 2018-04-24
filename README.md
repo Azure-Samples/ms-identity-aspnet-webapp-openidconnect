@@ -92,7 +92,7 @@ On the sign-in page, enter the name and password of a personal Microsoft account
 
 As you sign in, the app will change the sign-in button into a greeting to the current user - and two new menu commands will appear: Read Mail and Send Mail.
 
-![Post sign-in](./ReadmeFiles/Post sign-in.JPG)
+![Post sign-in](./ReadmeFiles/Postsign-in.JPG)
 
 Click on **Read Mail**: the app will show a dump of the last few messages from the current user's inbox, as they are received from the Microsoft Graph.
 
