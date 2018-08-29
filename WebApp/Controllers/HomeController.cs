@@ -54,12 +54,13 @@ namespace WebApp.Controllers
             string signedInUserID = ClaimsPrincipal.Current.FindFirst(ClaimTypes.NameIdentifier).Value;
             TokenCache userTokenCache = new MSALSessionCache(signedInUserID, this.HttpContext).GetMsalCacheInstance();            
             ConfidentialClientApplication cca = new ConfidentialClientApplication(clientId, redirectUri,new ClientCredential(appKey), userTokenCache, null);
-            if (cca.Users.Count() > 0)
+            var accounts = await cca.GetAccountsAsync();
+            if (accounts.Any())
             {
                 string[] scopes = { "Mail.Send" };
                 try
                 {
-                    AuthenticationResult result = await cca.AcquireTokenSilentAsync(scopes,cca.Users.First());
+                    AuthenticationResult result = await cca.AcquireTokenSilentAsync(scopes, accounts.First());
                 }
                 catch (MsalUiRequiredException)
                 {
@@ -116,12 +117,13 @@ namespace WebApp.Controllers
             string signedInUserID = ClaimsPrincipal.Current.FindFirst(ClaimTypes.NameIdentifier).Value;
             TokenCache userTokenCache = new MSALSessionCache(signedInUserID, this.HttpContext).GetMsalCacheInstance();
             ConfidentialClientApplication cca = new ConfidentialClientApplication(clientId, redirectUri, new ClientCredential(appKey), userTokenCache, null);
-            if (cca.Users.Count() > 0)
+            var accounts = await cca.GetAccountsAsync();
+            if (accounts.Any())
             {
                 string[] scopes = { "Mail.Send" };
                 try
                 {
-                    AuthenticationResult result = await cca.AcquireTokenSilentAsync(scopes,cca.Users.First());
+                    AuthenticationResult result = await cca.AcquireTokenSilentAsync(scopes, accounts.First());
 
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", result.AccessToken);
                     HttpResponseMessage response = await client.SendAsync(request);
@@ -158,10 +160,11 @@ namespace WebApp.Controllers
 
                 ConfidentialClientApplication cca = 
                     new ConfidentialClientApplication(clientId, redirectUri, new ClientCredential(appKey), userTokenCache, null);
-                if (cca.Users.Count() > 0)
+                var accounts = await cca.GetAccountsAsync();
+                if (accounts.Any())
                 {
                     string[] scopes = { "Mail.Read" };
-                    AuthenticationResult result = await cca.AcquireTokenSilentAsync(scopes, cca.Users.First());
+                    AuthenticationResult result = await cca.AcquireTokenSilentAsync(scopes, accounts.First());
 
                     HttpClient hc = new HttpClient();
                     hc.DefaultRequestHeaders.Authorization =
