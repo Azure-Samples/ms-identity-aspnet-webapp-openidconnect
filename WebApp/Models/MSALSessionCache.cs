@@ -50,7 +50,11 @@ namespace WebApp_OpenIDConnect_DotNet.Models
         public void Load()
         {
             SessionLock.EnterReadLock();
-            cache.Deserialize((byte[])httpContext.Session[CacheId]);
+            byte[] blob = (byte[])httpContext.Session[CacheId];
+            if (blob != null)
+            {
+                cache.Deserialize(blob);
+            }
             SessionLock.ExitReadLock();
         }
 
