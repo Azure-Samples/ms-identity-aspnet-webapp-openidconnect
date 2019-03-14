@@ -191,10 +191,11 @@ The `ReadMail` action in the `HomeController` class demonstrates how to take adv
 
  ConfidentialClientApplication cca =
      new ConfidentialClientApplication(clientId, redirectUri, new ClientCredential(appKey), userTokenCache, null);
- if (cca.Users.Count() > 0)
+ var accounts = await cca.GetAccountsAsync();
+ if (accounts.Any() > 0)
  {
      string[] scopes = { "Mail.Read" };
-     AuthenticationResult result = await cca.AcquireTokenSilentAsync(scopes, cca.Users.First());
+     AuthenticationResult result = await cca.AcquireTokenSilentAsync(scopes, accounts.First());
 
 ```
 
