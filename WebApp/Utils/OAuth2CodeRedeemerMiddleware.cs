@@ -32,12 +32,7 @@ namespace WebApp.Utils
         public OAuth2CodeRedeemerMiddleware(OwinMiddleware next, OAuth2CodeRedeemerOptions options)
             : base(next)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException("options");
-            }
-
-            this.options = options;
+            this.options = options ?? throw new ArgumentNullException("options");
         }
 
         public async override Task Invoke(IOwinContext context)
@@ -47,22 +42,30 @@ namespace WebApp.Utils
             {
                 //extract state
                 string state = HttpUtility.UrlDecode(context.Request.Query["state"]);
-                string session_state = context.Request.Query["session_state"];
+
+                IConfidentialClientApplication cca = ConfidentialClientApplicationBuilder
+                    .Create(options.ClientId)
+                    .WithRedirectUri(options.RedirectUri)
+                    .WithClientSecret(options.ClientSecret)
+                    .Build();
 
                 string signedInUserID = context.Authentication.User.FindFirst(System.IdentityModel.Claims.ClaimTypes.NameIdentifier).Value;
                 HttpContextBase hcb = context.Environment["System.Web.HttpContextBase"] as HttpContextBase;
-                TokenCache userTokenCache = new MSALSessionCache(signedInUserID, hcb).GetMsalCacheInstance();
-                ConfidentialClientApplication cca = new ConfidentialClientApplication(options.ClientId, options.RedirectUri, new ClientCredential(options.ClientSecret), userTokenCache, null);
+                new MSALSessionCache(cca.UserTokenCache, signedInUserID, hcb);
 
                 //validate state
                 CodeRedemptionData crd = OAuth2RequestManager.ValidateState(state, hcb);
 
                 if (crd != null)
-                {//if valid
-                 //redeem code
+                {
+                    //if valid
+                    //redeem code
                     try
                     {
-                        AuthenticationResult result = await cca.AcquireTokenByAuthorizationCodeAsync(code, crd.Scopes);
+                        AuthenticationResult result = await cca
+                            .AcquireTokenByAuthorizationCode(crd.Scopes, code)
+                            .ExecuteAsync()
+                            .ConfigureAwait(false);
                     }
                     catch (Exception ee)
                     {
@@ -80,7 +83,9 @@ namespace WebApp.Utils
                 }
             }
             else
-                await this.Next.Invoke(context);
+            {
+                await Next.Invoke(context);
+            }
         }
     }
 
@@ -104,7 +109,7 @@ namespace WebApp.Utils
 
     public class OAuth2RequestManager
     {
-        private static ReaderWriterLockSlim SessionLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+        private static readonly ReaderWriterLockSlim SessionLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
 
         /// Generate a state value using a random Guid value, the origin of the request and the scopes being requested.
         /// The state value will be consumed by the OAuth controller for validation, for specifying the corresc scopes during code redemption, 
@@ -117,17 +122,22 @@ namespace WebApp.Utils
                 string stateGuid = Guid.NewGuid().ToString();
                 SaveUserStateValue(stateGuid, httpcontext);
 
-                List<String> stateList = new List<String>();
-                stateList.Add(stateGuid);
-                stateList.Add(requestUrl);
+                List<String> stateList = new List<string>
+                {
+                    stateGuid,
+                    requestUrl
+                };
 
                 // turn the scopes array into a comma separated list string
                 string scopeslist = scopes[0];
                 if (scopes.Count() > 1)
+                {
                     for (int i = 1; i < scopes.Count(); i++)
                     {
                         scopeslist += "," + scopes[i];
                     }
+                }
+
                 stateList.Add(scopeslist);
 
                 var formatter = new BinaryFormatter();
@@ -171,7 +181,7 @@ namespace WebApp.Utils
                 var stateBits = Convert.FromBase64String(HttpUtility.UrlDecode(state));
                 var formatter = new BinaryFormatter();
                 var stream = new MemoryStream(stateBits);
-                List<String> stateList = (List<String>)formatter.Deserialize(stream);
+                List<string> stateList = (List<string>)formatter.Deserialize(stream);
                 var stateGuid = stateList[0];
                 //TODO - cleaning up should not be necessary, I have just one entry per user
                 // but at least I should do it for making the state single use
@@ -186,7 +196,9 @@ namespace WebApp.Utils
                     };
                 }
                 else
+                {
                     return null;
+                }
             }
             catch
             {
@@ -194,7 +206,7 @@ namespace WebApp.Utils
             }
         }
 
-        public static async Task<string> GenerateAuthorizationRequestUrl(string[] scopes, ConfidentialClientApplication cca, HttpContextBase httpcontext, UrlHelper url)
+        public static async Task<string> GenerateAuthorizationRequestUrl(string[] scopes, IConfidentialClientApplication cca, HttpContextBase httpcontext, UrlHelper url)
         {
             string signedInUserID = ClaimsPrincipal.Current.FindFirst(System.IdentityModel.Claims.ClaimTypes.NameIdentifier).Value;
             string preferredUsername = ClaimsPrincipal.Current.FindFirst("preferred_username").Value;
@@ -204,12 +216,14 @@ namespace WebApp.Utils
 
             // 9188040d-6c67-4c5b-b112-36a304b66dad is the GUID that indicates that the user is a consumer user from a Microsoft account. All personal account will have this tenant id.
             string domain_hint = (tenantID == "9188040d-6c67-4c5b-b112-36a304b66dad") ? "consumers" : "organizations";
-            Uri authzMessageUri = await cca.GetAuthorizationRequestUrlAsync(scopes,
-                oauthCodeProcessingPath.ToString(),
-                preferredUsername,
-                state == null ? null : "&state=" + state + "&domain_hint=" + domain_hint,
-                null,
-                cca.Authority);
+            Uri authzMessageUri = await cca
+                .GetAuthorizationRequestUrl(scopes)
+                .WithRedirectUri(oauthCodeProcessingPath.ToString())
+                .WithLoginHint(preferredUsername)
+                .WithExtraQueryParameters(state == null ? null : "&state=" + state + "&domain_hint=" + domain_hint)
+                .WithAuthority(cca.Authority)
+                .ExecuteAsync(CancellationToken.None)
+                .ConfigureAwait(false);
 
             return authzMessageUri.ToString();
         }

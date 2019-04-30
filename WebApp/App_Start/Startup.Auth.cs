@@ -20,9 +20,9 @@ namespace WebApp
     public partial class Startup
     {
         public static string clientId = ConfigurationManager.AppSettings["ida:ClientId"];
-        private static string appKey = ConfigurationManager.AppSettings["ida:ClientSecret"];
+        private static readonly string appKey = ConfigurationManager.AppSettings["ida:ClientSecret"];
         public static string aadInstance = ConfigurationManager.AppSettings["ida:AADInstance"];
-        private static string redirectUri = ConfigurationManager.AppSettings["ida:RedirectUri"];
+        private static readonly string redirectUri = ConfigurationManager.AppSettings["ida:RedirectUri"];
 
         public void ConfigureAuth(IAppBuilder app)
         {
@@ -46,7 +46,7 @@ namespace WebApp
                     // The `Authority` represents the v2.0 endpoint - https://login.microsoftonline.com/common/v2.0
                     // The `Scope` describes the initial permissions that your app will need.  See https://azure.microsoft.com/documentation/articles/active-directory-v2-scopes/
                     ClientId = clientId,
-                    Authority = String.Format(CultureInfo.InvariantCulture, aadInstance, "common", "/v2.0"),
+                    Authority = string.Format(CultureInfo.InvariantCulture, aadInstance, "common", "/v2.0"),
                     RedirectUri = redirectUri,
                     Scope = "openid profile offline_access Mail.Read",
                     PostLogoutRedirectUri = redirectUri,
@@ -72,15 +72,24 @@ namespace WebApp
 
         private async Task OnAuthorization(AuthorizationCodeReceivedNotification context)
         {
+            IConfidentialClientApplication cca = ConfidentialClientApplicationBuilder
+                .Create(clientId)
+                .WithRedirectUri(redirectUri)
+                .WithClientSecret(appKey)
+                .Build();
+
             var code = context.Code;
             string signedInUserID = context.AuthenticationTicket.Identity.FindFirst(ClaimTypes.NameIdentifier).Value;
-            TokenCache userTokenCache = new MSALSessionCache(signedInUserID, context.OwinContext.Environment["System.Web.HttpContextBase"] as HttpContextBase).GetMsalCacheInstance();
-            ConfidentialClientApplication cca = new ConfidentialClientApplication(clientId, redirectUri, new ClientCredential(appKey), userTokenCache, null);
+            new MSALSessionCache(cca.UserTokenCache, signedInUserID, context.OwinContext.Environment["System.Web.HttpContextBase"] as HttpContextBase);
+
             string[] scopes = { "Mail.Read" };
 
             try
             {
-                AuthenticationResult result = await cca.AcquireTokenByAuthorizationCodeAsync(code, scopes);
+                AuthenticationResult result = await cca
+                    .AcquireTokenByAuthorizationCode(scopes, code)
+                    .ExecuteAsync()
+                    .ConfigureAwait(false);
             }
             catch (Exception ex)
             {

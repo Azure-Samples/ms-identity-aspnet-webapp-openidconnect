@@ -1,7 +1,5 @@
 ﻿using Microsoft.Identity.Client;
-using Microsoft.IdentityModel.Protocols;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Web;
@@ -12,8 +10,6 @@ using System.Threading.Tasks;
 using System.Net.Http;
 using Microsoft.Owin.Security;
 using Microsoft.Owin.Security.OpenIdConnect;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
 
@@ -23,8 +19,9 @@ namespace WebApp.Controllers
     public class HomeController : Controller
     {
         public static string clientId = ConfigurationManager.AppSettings["ida:ClientId"];
-        private static string appKey = ConfigurationManager.AppSettings["ida:ClientSecret"];
-        private static string redirectUri = ConfigurationManager.AppSettings["ida:RedirectUri"];
+        private static readonly string appKey = ConfigurationManager.AppSettings["ida:ClientSecret"];
+        private static readonly string redirectUri = ConfigurationManager.AppSettings["ida:RedirectUri"];
+
         public ActionResult Index()
         {
             return View();
@@ -51,22 +48,31 @@ namespace WebApp.Controllers
         public async Task<ActionResult> SendMail()
         {            
             // try to get token silently
+            IConfidentialClientApplication cca = ConfidentialClientApplicationBuilder
+                .Create(clientId)
+                .WithRedirectUri(redirectUri)
+                .WithClientSecret(appKey)
+                .Build();
+
             string signedInUserID = ClaimsPrincipal.Current.FindFirst(ClaimTypes.NameIdentifier).Value;
-            TokenCache userTokenCache = new MSALSessionCache(signedInUserID, this.HttpContext).GetMsalCacheInstance();            
-            ConfidentialClientApplication cca = new ConfidentialClientApplication(clientId, redirectUri,new ClientCredential(appKey), userTokenCache, null);
+            new MSALSessionCache(cca.UserTokenCache, signedInUserID, HttpContext);
+
             var accounts = await cca.GetAccountsAsync();
             if (accounts.Any())
             {
                 string[] scopes = { "Mail.Send" };
                 try
                 {
-                    AuthenticationResult result = await cca.AcquireTokenSilentAsync(scopes, accounts.First());
+                    AuthenticationResult result = await cca
+                        .AcquireTokenSilent(scopes, accounts.First())
+                        .ExecuteAsync()
+                        .ConfigureAwait(false);
                 }
                 catch (MsalUiRequiredException)
                 {
                     try
                     {// when failing, manufacture the URL and assign it
-                        string authReqUrl = await WebApp.Utils.OAuth2RequestManager.GenerateAuthorizationRequestUrl(scopes, cca, this.HttpContext, Url);
+                        string authReqUrl = await WebApp.Utils.OAuth2RequestManager.GenerateAuthorizationRequestUrl(scopes, cca, HttpContext, Url);
                         ViewBag.AuthorizationRequest = authReqUrl;
                     }
                     catch (Exception ee)
@@ -105,25 +111,34 @@ namespace WebApp.Controllers
   ""SaveToSentItems"": ""false""
 }}
 ";
-            string message = String.Format(messagetemplate, subject, body, recipient);
-
+            string message = string.Format(messagetemplate, subject, body, recipient);
             
-            HttpClient client = new HttpClient();            
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, "https://graph.microsoft.com/v1.0/me/microsoft.graph.sendMail");
-            
-            request.Content = new StringContent(message, Encoding.UTF8, "application/json");
+            HttpClient client = new HttpClient();
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, "https://graph.microsoft.com/v1.0/me/microsoft.graph.sendMail")
+            {
+                Content = new StringContent(message, Encoding.UTF8, "application/json")
+            };
 
             // try to get token silently
+            IConfidentialClientApplication cca = ConfidentialClientApplicationBuilder
+                .Create(clientId)
+                .WithRedirectUri(redirectUri)
+                .WithClientSecret(appKey)
+                .Build();
+
             string signedInUserID = ClaimsPrincipal.Current.FindFirst(ClaimTypes.NameIdentifier).Value;
-            TokenCache userTokenCache = new MSALSessionCache(signedInUserID, this.HttpContext).GetMsalCacheInstance();
-            ConfidentialClientApplication cca = new ConfidentialClientApplication(clientId, redirectUri, new ClientCredential(appKey), userTokenCache, null);
+            new MSALSessionCache(cca.UserTokenCache, signedInUserID, HttpContext);
+
             var accounts = await cca.GetAccountsAsync();
             if (accounts.Any())
             {
                 string[] scopes = { "Mail.Send" };
                 try
                 {
-                    AuthenticationResult result = await cca.AcquireTokenSilentAsync(scopes, accounts.First());
+                    AuthenticationResult result = await cca
+                        .AcquireTokenSilent(scopes, accounts.First())
+                        .ExecuteAsync()
+                        .ConfigureAwait(false);
 
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", result.AccessToken);
                     HttpResponseMessage response = await client.SendAsync(request);
@@ -138,7 +153,7 @@ namespace WebApp.Controllers
                 {
                     try
                     {// when failing, manufacture the URL and assign it
-                        string authReqUrl = await WebApp.Utils.OAuth2RequestManager.GenerateAuthorizationRequestUrl(scopes, cca, this.HttpContext, Url);
+                        string authReqUrl = await WebApp.Utils.OAuth2RequestManager.GenerateAuthorizationRequestUrl(scopes, cca, HttpContext, Url);
                         ViewBag.AuthorizationRequest = authReqUrl;
                     }
                     catch (Exception ee)
@@ -155,16 +170,23 @@ namespace WebApp.Controllers
         {            
             try
             {
-                string signedInUserID = ClaimsPrincipal.Current.FindFirst(ClaimTypes.NameIdentifier).Value;
-                TokenCache userTokenCache = new MSALSessionCache(signedInUserID, this.HttpContext).GetMsalCacheInstance();
+                IConfidentialClientApplication cca =ConfidentialClientApplicationBuilder
+                    .Create(clientId)
+                    .WithRedirectUri(redirectUri)
+                    .WithClientSecret(appKey)
+                    .Build();
 
-                ConfidentialClientApplication cca = 
-                    new ConfidentialClientApplication(clientId, redirectUri, new ClientCredential(appKey), userTokenCache, null);
+                string signedInUserID = ClaimsPrincipal.Current.FindFirst(ClaimTypes.NameIdentifier).Value;
+                new MSALSessionCache(cca.UserTokenCache, signedInUserID, HttpContext);
+
                 var accounts = await cca.GetAccountsAsync();
                 if (accounts.Any())
                 {
                     string[] scopes = { "Mail.Read" };
-                    AuthenticationResult result = await cca.AcquireTokenSilentAsync(scopes, accounts.First());
+                    AuthenticationResult result = await cca
+                        .AcquireTokenSilent(scopes, accounts.First())
+                        .ExecuteAsync()
+                        .ConfigureAwait(false);
 
                     HttpClient hc = new HttpClient();
                     hc.DefaultRequestHeaders.Authorization =
@@ -173,7 +195,9 @@ namespace WebApp.Controllers
                     string rez = await hrm.Content.ReadAsStringAsync();
                     ViewBag.Message = rez;
                 }
-                else { }
+                else
+                {
+                }
                 return View();
             }
             catch (MsalUiRequiredException)
