@@ -1,5 +1,4 @@
 ﻿using Microsoft.Identity.Client;
-using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Owin.Security;
@@ -7,38 +6,26 @@ using Microsoft.Owin.Security.Cookies;
 using Microsoft.Owin.Security.Notifications;
 using Microsoft.Owin.Security.OpenIdConnect;
 using Owin;
-using System;
-using System.Configuration;
-using System.Globalization;
-using System.IdentityModel.Claims;
-using System.IdentityModel.Tokens;
 using System.Threading.Tasks;
-using System.Web;
 using WebApp.Utils;
-using WebApp_OpenIDConnect_DotNet.Models;
 
 namespace WebApp
 {
     public partial class Startup
     {
-        public static string clientId = ConfigurationManager.AppSettings["ida:ClientId"];
-        private static string appKey = ConfigurationManager.AppSettings["ida:ClientSecret"];
-        public static string aadInstance = ConfigurationManager.AppSettings["ida:AADInstance"];
-        private static string redirectUri = ConfigurationManager.AppSettings["ida:RedirectUri"];
-
         public void ConfigureAuth(IAppBuilder app)
         {
             app.SetDefaultSignInAsAuthenticationType(CookieAuthenticationDefaults.AuthenticationType);
 
             app.UseCookieAuthentication(new CookieAuthenticationOptions());
 
-            // Custom middleware initialization
+            // Custom middleware initialization. This is activated when the code obtained from a code_grant is present in the querystring (&code=<code>).
             app.UseOAuth2CodeRedeemer(
                 new OAuth2CodeRedeemerOptions
                 {
-                    ClientId = clientId,
-                    ClientSecret = appKey,
-                    RedirectUri = redirectUri
+                    ClientId = Globals.ClientId,
+                    ClientSecret = Globals.ClientSecret,
+                    RedirectUri = Globals.RedirectUri
                 }
                 );
 
@@ -46,12 +33,11 @@ namespace WebApp
                 new OpenIdConnectAuthenticationOptions
                 {
                     // The `Authority` represents the v2.0 endpoint - https://login.microsoftonline.com/common/v2.0
-                    // The `Scope` describes the initial permissions that your app will need.  See https://azure.microsoft.com/documentation/articles/active-directory-v2-scopes/
-                    ClientId = clientId,
-                    Authority = String.Format(CultureInfo.InvariantCulture, aadInstance, "common", "/v2.0"),
-                    RedirectUri = redirectUri,
-                    Scope = "openid profile offline_access Mail.Read",
-                    PostLogoutRedirectUri = redirectUri,
+                    Authority = Globals.Authority,
+                    ClientId = Globals.ClientId,
+                    RedirectUri = Globals.RedirectUri,
+                    PostLogoutRedirectUri = Globals.RedirectUri,
+                    Scope = Globals.BasicSignInScopes, // a basic set of permissions for user sign in & profile access "openid profile offline_access"
                     TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = false,
@@ -63,41 +49,28 @@ namespace WebApp
                         //        //else
                         //        //    throw new SecurityTokenInvalidIssuerException("Invalid issuer");
                         //    },
+                        //NameClaimType = "name",
                     },
-                    Notifications = new OpenIdConnectAuthenticationNotifications
+                    Notifications = new OpenIdConnectAuthenticationNotifications()
                     {
-                        AuthorizationCodeReceived = OnAuthorization,
-                        AuthenticationFailed = OnAuthenticationFailed
+                        AuthorizationCodeReceived = OnAuthorizationCodeReceived,
+                        AuthenticationFailed = OnAuthenticationFailed,
                     }
                 });
         }
 
-        private async Task OnAuthorization(AuthorizationCodeReceivedNotification context)
+        private async Task OnAuthorizationCodeReceived(AuthorizationCodeReceivedNotification context)
         {
-            var code = context.Code;
-            string signedInUserID = context.AuthenticationTicket.Identity.FindFirst(ClaimTypes.NameIdentifier).Value;
-            TokenCache userTokenCache = new MSALSessionCache(signedInUserID, context.OwinContext.Environment["System.Web.HttpContextBase"] as HttpContextBase).GetMsalCacheInstance();
-            ConfidentialClientApplication cca = new ConfidentialClientApplication(clientId, redirectUri, new ClientCredential(appKey), userTokenCache, null);
-            string[] scopes = { "Mail.Read" };
-
-            try
-            {
-                AuthenticationResult result = await cca.AcquireTokenByAuthorizationCodeAsync(code, scopes);
-            }
-            catch (Exception ex)
-            {
-                context.Response.Write(ex.Message);
-            }
+            // Upon successful sign in, get the acess token & cache it using MSAL
+            IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
+            AuthenticationResult result = await cc.AcquireTokenByAuthorizationCode(new[] { "Mail.Read" }, context.Code).ExecuteAsync();
         }
 
         private Task OnAuthenticationFailed(AuthenticationFailedNotification<OpenIdConnectMessage, OpenIdConnectAuthenticationOptions> notification)
         {
-            // If there is a code in the OpenID Connect response, redeem it for an access token and refresh token, and store those away.
-            {
-                notification.HandleResponse();
-                notification.Response.Redirect("/Error?message=" + notification.Exception.Message);
-                return Task.FromResult(0);
-            }
+            notification.HandleResponse();
+            notification.Response.Redirect("/Error?message=" + notification.Exception.Message);
+            return Task.FromResult(0);
         }
     }
 }

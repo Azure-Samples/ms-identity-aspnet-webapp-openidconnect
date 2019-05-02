@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.572
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApp", "WebApp\WebApp.csproj", "{D4960069-0AB5-42D5-B711-722681DBCA0F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MailApp", "WebApp\MailApp.csproj", "{D4960069-0AB5-42D5-B711-722681DBCA0F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,5 +18,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C920CD85-FA0F-4917-AF2C-DE73B3623F5F}
 	EndGlobalSection
 EndGlobal

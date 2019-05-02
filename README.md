@@ -16,9 +16,9 @@ endpoint: AAD V2
 
 This sample showcases how to develop a web application that handles sign on via the unified Azure AD and MSA endpoint, so that users can sign in to the app using both their work/school account or Microsoft account. The application is implemented with ASP.NET MVC 4.6, while the web sign-on functionality is implemented via ASP.NET OpenId Connect OWIN middleware.
 
-The sample also shows how to use MSAL.NET (Microsoft Authentication Library) to obtain a token for invoking the Microsoft Graph. Specifically, the sample shows how to visualize the last email messages received by the signed in user, and how to send a mail message as the user.
+The sample also shows how to use MSAL.NET (Microsoft Authentication Library) to obtain a token for invoking the [Microsoft Graph](https://graph.microsoft.com). Specifically, the sample shows how to visualize the last email messages received by the signed in user, and how to send a mail message as the user using Microsoft Graph.
 
-Finally, the sample showcases a new capability introduced by the new authentication endpoint - the ability for one app to ask for new permissions incrementally.
+Finally, the sample showcases a new capability introduced by the new authentication endpoint - the ability for one app to seek consent for new permissions [incrementally](https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison#incremental-and-dynamic-consent).
 
 For more information about how the protocols work in this scenario and other scenarios, see [Authentication Scenarios for Azure AD](http://go.microsoft.com/fwlink/?LinkId=394414).
 
@@ -53,20 +53,85 @@ You can get an Office365 office subscription, which will give you both an Azure 
 
 From your shell or command line:
 
-`git clone https://github.com/Azure-Samples/active-directory-dotnet-webapp-openidconnect-v2.git`
+```Shell
+git clone https://github.com/Azure-Samples/ms-identity-aspnet-webapp-openidconnect.git
+```
 
-> Given that the name of the sample is pretty long, and so are the name of the referenced NuGet pacakges, you might want to clone it in a folder close to the root of your hard drive, to avoid file size limitations on Windows.
+or download and exact the repository .zip file.
 
-### Step 2:  Register the sample on the app registration portal
+> Given that the name of the sample is pretty long, and so are the name of the referenced NuGet packages, you might want to clone it in a folder close to the root of your hard drive, to avoid file size limitations on Windows.
 
-Create a new app at [apps.dev.microsoft.com](https://apps.dev.microsoft.com), or follow these [detailed steps](https://azure.microsoft.com/en-us/documentation/articles/active-directory-v2-app-registration/).  Make sure to:
+### Step 2:  Register the sample application with your Azure Active Directory tenant
 
-- Copy down the **Application ID** assigned to your app, you'll need it soon.
-- Add the **Web** platform for your app.
-- Enter the correct **Redirect URI**. The redirect uri indicates to Azure AD where authentication responses should be directed - the default for this tutorial is `https://localhost:44326/`.
-- Add a new **application secret** via the "Generate new password", and save the result in a temporary location - you'll need it in the next step.
+There is one project in this sample. To register it, you can:
 
-Note that we are not adding permissions for reading and sending emails during the app registration as you would do with the [v1 endpoint](https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-integrating-applications). The [Incremental and dynamic consent](https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-v2-compare#incremental-and-dynamic-consent) capability of the V2 endpoint has made this step optional.
+- either follow the steps [Step 2: Register the sample with your Azure Active Directory tenant](#step-2-register-the-sample-with-your-azure-active-directory-tenant) and [Step 3:  Configure the sample to use your Azure AD tenant](#choose-the-azure-ad-tenant-where-you-want-to-create-your-applications)
+- or use PowerShell scripts that:
+  - **automatically** creates the Azure AD applications and related objects (passwords, permissions, dependencies) for you
+  - modify the Visual Studio projects' configuration files.
+
+If you want to use this automation:
+1. On Windows run PowerShell and navigate to the root of the cloned directory
+1. In PowerShell run:
+   ```PowerShell
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process -Force
+   ```
+1. Run the script to create your Azure AD application and configure the code of the sample application accordinly. 
+   ```PowerShell
+   .\AppCreationScripts\Configure.ps1
+   ```
+   > Other ways of running the scripts are described in [App Creation Scripts](./AppCreationScripts/AppCreationScripts.md)
+
+1. Open the Visual Studio solution and click start
+
+If you don't want to use this automation, follow the steps below
+
+#### Choose the Azure AD tenant where you want to create your applications
+
+As a first step you'll need to:
+
+1. Sign in to the [Azure portal](https://portal.azure.com) using either a work or school account or a personal Microsoft account.
+1. If your account is present in more than one Azure AD tenant, select your profile at the top right corner in the menu on top of the page, and then **switch directory**.
+   Change your portal session to the desired Azure AD tenant.
+
+#### Register the service app (openidconnect-v2)
+
+1. Navigate to the Microsoft identity platform for developers [App registrations](https://go.microsoft.com/fwlink/?linkid=2083908) page.
+1. Select **New registration**.
+1. When the **Register an application page** appears, enter your application's registration information:
+   - In the **Name** section, enter a meaningful application name that will be displayed to users of the app, for example `openidconnect-v2`.
+   - Change **Supported account types** to **Accounts in any organizational directory and personal Microsoft accounts (e.g. Skype, Xbox, Outlook.com)**.
+   - In the Redirect URI (optional) section, select **Web** in the combo-box and enter the following redirect URIs: `https://localhost:44326/`.
+1. Select **Register** to create the application.
+1. On the app **Overview** page, find the **Application (client) ID** value and record it for later. You'll need it to configure the Visual Studio configuration file for this project.
+1. From the app's Overview page, select the **Authentication** section.
+   - In the **Advanced settings** | **Implicit grant** section, check **ID tokens** as this sample requires
+     the [Implicit grant flow](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-implicit-grant-flow) to be enabled to
+     sign-in the user, and call an API.
+1. Select **Save**.
+1. From the **Certificates & secrets** page, in the **Client secrets** section, choose **New client secret**:
+
+   - Type a key description (of instance `app secret`),
+   - Select a key duration of either **In 1 year**, **In 2 years**, or **Never Expires**.
+   - When you press the **Add** button, the key value will be displayed, copy, and save the value in a safe location.
+   - You'll need this key later to configure the project in Visual Studio. This key value will not be displayed again, nor retrievable by any other means,
+     so record it as soon as it is visible from the Azure portal.
+1. Select the **API permissions** section
+   - Click the **Add a permission** button and then,
+   - Ensure that the **Microsoft APIs** tab is selected
+   - In the *Commonly used Microsoft APIs* section, click on **Microsoft Graph**
+   - In the **Delegated permissions** section, ensure that the right permissions are checked: **openid**, **profile**, **offline_access**, **Mail.Read**. Use the search box if necessary.
+   - Select the **Add permissions** button
+    
+1. Select the **Manifest** section for your app.
+1. Search for **signInAudience** and make sure it's set to **AzureADandPersonalMicrosoftAccount**
+
+     ```JSON
+          "signInUrl": null,
+          "signInAudience": "AzureADandPersonalMicrosoftAccount", 
+     ```
+
+11. Click **Save** to save the app manifest.
 
 ### Step 3:  Configure the Visual Studio project with your app coordinates
 
@@ -80,7 +145,7 @@ Note that we are not adding permissions for reading and sending emails during th
 
 Clean the solution, rebuild the solution, and run it.
 
-Once you run the `WebApp` web application, you are presented with the standard ASP.NET home page.
+Once you run the `MailApp` web application, you are presented with the standard ASP.NET home page.
 Click on the **Sign-in with Microsoft** link on top-right to trigger the log-in flow.
 ![Sign-in](./ReadmeFiles/Sign-in.JPG)
 
@@ -90,7 +155,7 @@ On the sign-in page, enter the name and password of a personal Microsoft account
 
 > Remember, the account you choose must have access to an email inbox. If you are using a MSA and the email features don't work, your account might not have been migrated to the new API. The fastest workaround is to create a new test *@outlook.com account. Please refer to the beginning of this readme for instructions.
 
-As you sign in, the app will change the sign-in button into a greeting to the current user - and two new menu commands will appear: Read Mail and Send Mail.
+As you sign in, the app will change the sign-in button into a greeting to the current user - and two new menu commands will appear: `Read Mail` and `Send Mail`.
 
 ![Post sign-in](./ReadmeFiles/Postsign-in.JPG)
 
@@ -109,6 +174,8 @@ Once you have consented to this permission, you will be transported back to the 
 Hit the **sign-out** link on the top right corner.
 
 Sign in again with the same user, and follow the exact same steps described so far. You will notice that the send mail experience appears right away and no longer forces you to grant extra consent, as your decision has been recorded in your previous session.
+
+> Did the sample not work for you as expected? Did you encounter issues trying this sample? Then please reach out to us using the [GitHub Issues](../issues) page.
 
 ## About the code
 
@@ -154,56 +221,94 @@ Important things to notice:
 
 ### Initial token acquisition
 
-This sample makes use of OpenId Connect hybrid flow, where at authentication time the app receives both sign in info (the id_token) and artifacts (in this case, an authorization code) that the app can use for obtaining an access token. That token can be used to access other resources - in this sample, the Microsoft Graph, for the purpose of reading the user's mailbox.
-This sample shows how to use MSAL to redeem the authorization code into an access token, which is saved in a cache along with any other useful artifact (such as associated refresh_tokens) so that it can be used later on in the application (from the controllers' actions).
+This sample makes use of OpenId Connect hybrid flow, where at authentication time the app receives both sign in info the [id_token](https://docs.microsoft.com/en-us/azure/active-directory/develop/id-tokens) and artifacts (in this case, an [authorization code](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow)) that the app can use for obtaining an [access token](https://docs.microsoft.com/en-us/azure/active-directory/develop/access-tokens). That token can be used to access other resources - in this sample, the Microsoft Graph, for the purpose of reading the user's mailbox.
+
+This sample shows how to use MSAL to redeem the authorization code into an access token, which is saved in a cache along with any other useful artifact (such as associated [refresh_tokens](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow#refresh-the-access-token)) so that it can be used later on in the application (from the controllers' actions).
+
 The redemption takes place in the `AuthorizationCodeReceived` notification of the authorization middleware. Here there's the relevant code:
 
 ```CSharp
 AuthorizationCodeReceived = async (context) =>
 {
-    var code = context.Code;
-    string signedInUserID = context.AuthenticationTicket.Identity.FindFirst(ClaimTypes.NameIdentifier).Value;
-    TokenCache userTokenCache = new MSALSessionCache(signedInUserID,
-        context.OwinContext.Environment["System.Web.HttpContextBase"] as HttpContextBase).GetMsalCacheInstance();
-    ConfidentialClientApplication cca =
-        new ConfidentialClientApplication(clientId, redirectUri, new ClientCredential(appKey), userTokenCache,null);
-    string[] scopes = { "Mail.Read" };
-    try
-    {
-        AuthenticationResult result = await cca.AcquireTokenByAuthorizationCodeAsync(code, scopes);
-    }
+            IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
+            AuthenticationResult result = await cc.AcquireTokenByAuthorizationCode(new[] { "Mail.Read" }, context.Code).ExecuteAsync();
 
 ```
 
 Important things to notice:
 
-- The `ConfidentialClientApplication` is the primitive that MSAL uses to model the Web application. As such, it is initialized with the main application's coordinates.
-- `MSALSessionCache` is a sample implementation of a custom MSAL token cache, which saves tokens in the current HTTP session. In a real-life application, you would likely want to save tokens in a long lived store instead, so that you don't need to retrieve new ones more often than necessary.
-- The scope requested by `AcquireTokenByAuthorizationCodeAsync` is just the one required for invoking the API targeted by the application as part of its essential features. We'll see later that the app allows for extra scopes, but you can ignore those at this point.
+- The `IConfidentialClientApplication` is the primitive that MSAL uses to model the Web application. As such, it is initialized with the main application's coordinates.
+- The scope requested by `AcquireTokenByAuthorizationCode` is just the one required for invoking the API targeted by the application as part of its essential features. We'll see later that the app allows for extra scopes, but you can ignore those at this point.
+
+The IConfidentialClientApplication is created in a separate function in the `MsalAppBuilder` class 
+
+```Csharp
+        public static IConfidentialClientApplication BuildConfidentialClientApplication()
+        {
+            IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(Globals.ClientId)
+                  .WithClientSecret(Globals.ClientSecret)
+                  .WithRedirectUri(Globals.RedirectUri)
+                  .WithAuthority(new Uri(Globals.Authority))
+                  .Build();
+
+            MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache);
+            return clientapp;
+        }
+```
+
+Important things to notice:
+
+- The method builds an instance of the IConfidentialClientApplication using the new [builder pattern introduced by MSAL v3.X](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Client-Applications).
+
+- `MSALSessMSALPerUserMemoryTokenCacheionCache` is a sample implementation of a custom MSAL token cache, which saves tokens in a [MemoryCache](https://docs.microsoft.com/en-us/dotnet/framework/performance/caching-in-net-framework-applications) instance shared across the web app. In a real-life application, you would likely want to save tokens in a long lived store instead, so that you don't need to retrieve new ones more often than necessary.
 
 ### Using access tokens in the app, handling token expiration
 
-The `ReadMail` action in the `HomeController` class demonstrates how to take advantage of MSAL for getting access to protected API easily and securely. Here there's the relevant code:
+The `ReadMail` action in the `HomeController` class demonstrates how to take advantage of MSAL for getting access to protected API easily and securely. It also introduces you to the recommended [token acquisition pattern](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/AcquireTokenSilentAsync-using-a-cached-token) where you should first attempt to seek an access token in the cache.
+
+Here is the relevant code:
 
 ```CSharp
- string signedInUserID = ClaimsPrincipal.Current.FindFirst(ClaimTypes.NameIdentifier).Value;
- TokenCache userTokenCache = new MSALSessionCache(signedInUserID, this.HttpContext).GetMsalCacheInstance();
+        IConfidentialClientApplication app = MsalAppBuilder.BuildConfidentialClientApplication();
+        AuthenticationResult result = null;
+        var accounts = await app.GetAccountsAsync();
+        string[] scopes = { "Mail.Read" };
 
- ConfidentialClientApplication cca =
-     new ConfidentialClientApplication(clientId, redirectUri, new ClientCredential(appKey), userTokenCache, null);
- var accounts = await cca.GetAccountsAsync();
- if (accounts.Any() > 0)
- {
-     string[] scopes = { "Mail.Read" };
-     AuthenticationResult result = await cca.AcquireTokenSilentAsync(scopes, accounts.First());
+        try
+        {
+            // try to get token silently
+            result = await app.AcquireTokenSilent(scopes, accounts.FirstOrDefault()).ExecuteAsync().ConfigureAwait(false);
+        }
+        catch (MsalUiRequiredException ex)
+        {
+            // A MsalUiRequiredException happened on AcquireTokenSilentAsync.
+            // This indicates you need to call AcquireTokenAsync to acquire a token
+            Debug.WriteLine($"MsalUiRequiredException: {ex.Message}");
 
+            try
+            {
+                // Build the auth code request Uri
+                string authReqUrl = await OAuth2RequestManager.GenerateAuthorizationRequestUrl(scopes, app, HttpContext, Url);
+                ViewBag.AuthorizationRequest = authReqUrl;
+                ViewBag.Relogin = "true";
+            }
+            catch (MsalException msalex)
+            {
+                Response.Write($"Error Acquiring Token:{System.Environment.NewLine}{msalex}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Response.Write($"Error Acquiring Token Silently:{System.Environment.NewLine}{ex}");
+        }
 ```
 
-The idea is simple. The code creates a new instance of `ConfidentialClientApplication` with the exact same coordinates as the ones used when redeeming the authorization code at authentication time. In particular, note that the exact same cache is used.
-That done, all you need to do is to invoke `AcquireTokenSilentAsync`, asking for the scopes you need. MSAL will look up the cache and return any cached token, which matches with the requirement. If such access tokens are expired or no suitable access tokens are present, but there is an associated refresh token, MSAL will automatically use that to get a new access token and return it transparently.
+The idea is simple. The code creates a new instance of `IConfidentialClientApplication` with the exact same coordinates as the ones used when redeeming the authorization code at authentication time. In particular, note that the exact same cache is used.
+That done, all you need to do is to invoke `AcquireTokenSilent`, asking for the scopes you need. MSAL will look up the cache and return any cached token, which matches with the requirement. If such access tokens are expired or no suitable access tokens are present, but there is an associated refresh token, MSAL will automatically use that to get a new access token and return it transparently.
 
 In the case in which refresh tokens are not present or they fail to obtain a new access token, MSAL will throw `MsalUiRequiredException`. That means that in order to obtain the requested token, the user must go through an interactive experience.
-In the case of this sample, the Mail.Read permission is obtained as part of the login process - hence we need to trigger a new login; however we can't just redirect the user without warning, as it might be disorienting (what is happening, or why, would not be obvious to the user) and there might still be things they can do with the app that do not entail accessing mail. For that reason, the sample simply signals to the view to show a warning - and to offer a link to an action (`RefreshSession`) that the user can leverage for explicitly initiating the reauthentication process.
+
+In the case of this sample, the `Mail.Read` permission is obtained as part of the login process - hence we need to trigger a new login; however we can't just redirect the user without warning, as it might be disorienting (what is happening, or why, would not be obvious to the user) and there might still be things they can do with the app that do not entail accessing mail. For that reason, the sample simply signals to the view to show a warning - and to offer a link to an action (`RefreshSession`) that the user can leverage for explicitly initiating the reauthentication process.
 
 ### Handling incremental consent and OAuth2 code redemption
 
@@ -212,26 +317,27 @@ Observe the structure of the GET overload of that action. The code follows the s
 The application did not ask for `Mail.Send` during sign-in, hence the failure to obtain a token silently could have been caused by the fact that the user did not yet grant consent for the app to use this permission. Instead of triggering a new sign-in as we have done in `ReadMail`, here we can craft a specific authorization request for this permission. The call to the utility function `GenerateAuthorizationRequestUrl` does precisely that, leveraging MSAL to generate an OAuth2/OpenId Connect request for an authorization code for the Mail.Send permission.
 That request, which is in fact a URL, is injected in the view as a hyperlink: once again, the user sees that link as part of a warning that the current operation requires leaving the app and going back to the authentication and consent pages.
 When the user clicks that link, they are brought through the authorization flow that eventually leads to the app receiving an authorization code that can be redeemed for an access token containing the scope requested. However, the standard collection of OWIN middleware doesn't include anything that can be used for redeeming an authorization code for access and refresh tokens outside of a sign-in flow.
-This sample works around that limitation by providing a simple custom middleware, which takes care of intercepting messages containing authorization codes, validating them, redeeming the code and saving the resulting tokens in an MSAL cache, and finally redirecting to the URL that originated the request.
-Back in Startup.Auth.cs, you can see the custom middleware initialization logic right between the cookie middleware and the OpenId Connect middleware. The position in the pipeline is important, as in order to save the tokens in the correct cache the custom middleware needs to know who the current user is.
+This sample works around that limitation by providing a simple custom middleware, **which takes care of intercepting messages containing authorization codes, validating them, redeeming the code and saving the resulting tokens in an MSAL cache, and finally redirecting to the URL that originated the request.**
+
+Back in Startup.Auth.cs, you can see the custom middleware initialization logic right between the cookie middleware and the OpenId Connect middleware. **The position in the pipeline is important**, as in order to save the tokens in the correct cache the custom middleware needs to know who the current user is.
 
 ```CSharp
-app.UseCookieAuthentication(new CookieAuthenticationOptions());
+    app.UseCookieAuthentication(new CookieAuthenticationOptions());
 
-app.UseOAuth2CodeRedeemer(
-    new OAuth2CodeRedeemerOptions
-    {
-       ClientId = clientId,
-       ClientSecret = appKey,
-       RedirectUri = redirectUri
-    }
-);
+    app.UseOAuth2CodeRedeemer(
+        new OAuth2CodeRedeemerOptions
+        {
+            ClientId = Globals.ClientId,
+            ClientSecret = Globals.ClientSecret,
+            RedirectUri = Globals.RedirectUri
+        }
+        );
 
 app.UseOpenIdConnectAuthentication(
 
 ```
 
-Note that the custom middleware is provided only as an example, and it has numerous limitations (like a hard dependency on `MSALSessionCache`) that limit its applicability outside of this scenario.
+Note that the custom middleware is provided only as an example, and it has numerous limitations (like a hard dependency on `MSALPerUserMemoryTokenCache`) that limit its applicability outside of this scenario.
 
 ## Community Help and Support
 
