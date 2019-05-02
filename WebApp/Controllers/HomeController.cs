@@ -123,27 +123,10 @@ namespace WebApp.Controllers
                 // try to get token silently
                 result = await app.AcquireTokenSilent(scopes, accounts.FirstOrDefault()).ExecuteAsync().ConfigureAwait(false);
             }
-            catch (MsalUiRequiredException ex)
+            catch (Exception eee)
             {
-                // A MsalUiRequiredException happened on AcquireTokenSilentAsync.
-                // This indicates you need to call AcquireTokenAsync to acquire a token
-                Debug.WriteLine($"MsalUiRequiredException: {ex.Message}");
-
-                try
-                {
-                    // Build the auth code request Uri
-                    string authReqUrl = await OAuth2RequestManager.GenerateAuthorizationRequestUrl(scopes, app, HttpContext, Url);
-                    ViewBag.AuthorizationRequest = authReqUrl;
-                    ViewBag.Relogin = "true";
-                }
-                catch (MsalException msalex)
-                {
-                    Response.Write($"Error Acquiring Token:{System.Environment.NewLine}{msalex}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Response.Write($"Error Acquiring Token Silently:{System.Environment.NewLine}{ex}");
+                ViewBag.Error = "An error has occurred acquiring the token from cache. Details: " + eee.Message;
+                return View();
             }
 
             if (result != null)

@@ -160,7 +160,6 @@
     <Compile Include="Utils\ClaimPrincipalExtension.cs" />
     <Compile Include="Utils\Constants.cs" />
     <Compile Include="Utils\Globals.cs" />
-    <Compile Include="Utils\MSALAccount.cs" />
     <Compile Include="Utils\MsalAppBuilder.cs" />
     <Compile Include="Utils\MSALAppMemoryTokenCache.cs" />
     <Compile Include="Utils\MSALPerUserMemoryTokenCache.cs" />

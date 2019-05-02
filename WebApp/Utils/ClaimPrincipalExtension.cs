@@ -82,15 +82,6 @@ namespace WebApp.Utils
             return tenantIdclaim != null ? tenantIdclaim.Value : string.Empty;
         }
 
-        public static IAccount ToIAccount(this ClaimsPrincipal claimsPrincipal)
-        {
-            if (claimsPrincipal != null)
-            {
-                return new MSALAccount(claimsPrincipal.GetMsalAccountId(), claimsPrincipal.GetObjectId(), claimsPrincipal.GetTenantId());
-            }
-            return null;
-        }
-
         /// <summary>
         /// Builds a ClaimsPrincipal from an IAccount
         /// </summary>
