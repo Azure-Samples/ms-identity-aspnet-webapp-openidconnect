@@ -37,7 +37,7 @@ namespace WebApp
                     ClientId = Globals.ClientId,
                     RedirectUri = Globals.RedirectUri,
                     PostLogoutRedirectUri = Globals.RedirectUri,
-                    Scope = Globals.BasicSignInScopes, // a basic set of permissions for user sign in & profile access "openid profile offline_access"
+                    Scope = Globals.BasicSignInScopes + " Mail.Read", // a basic set of permissions for user sign in & profile access "openid profile offline_access"
                     TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = false,

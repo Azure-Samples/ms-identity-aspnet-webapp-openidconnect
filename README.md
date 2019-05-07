@@ -80,6 +80,8 @@ If you want to use this automation:
    ```PowerShell
    .\AppCreationScripts\Configure.ps1
    ```
+   > Remember to make the manual change in the manifest for the `signInAudience` as explained below.
+
    > Other ways of running the scripts are described in [App Creation Scripts](./AppCreationScripts/AppCreationScripts.md)
 
 1. Open the Visual Studio solution and click start
@@ -122,16 +124,16 @@ As a first step you'll need to:
    - In the *Commonly used Microsoft APIs* section, click on **Microsoft Graph**
    - In the **Delegated permissions** section, ensure that the right permissions are checked: **openid**, **profile**, **offline_access**, **Mail.Read**. Use the search box if necessary.
    - Select the **Add permissions** button
-    
+
 1. Select the **Manifest** section for your app.
 1. Search for **signInAudience** and make sure it's set to **AzureADandPersonalMicrosoftAccount**
 
      ```JSON
           "signInUrl": null,
-          "signInAudience": "AzureADandPersonalMicrosoftAccount", 
+          "signInAudience": "AzureADandPersonalMicrosoftAccount",
      ```
 
-11. Click **Save** to save the app manifest.
+1. Click **Save** to save the app manifest.
 
 ### Step 3:  Configure the Visual Studio project with your app coordinates
 

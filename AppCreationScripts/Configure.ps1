@@ -190,7 +190,7 @@ Function ConfigureApplications
 
    # URL of the AAD application in the Azure portal
    # Future? $servicePortalUrl = "https://portal.azure.com/#@"+$tenantName+"/blade/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/Overview/appId/"+$serviceAadApplication.AppId+"/objectId/"+$serviceAadApplication.ObjectId+"/isMSAApp/"
-   $servicePortalUrl = "https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/CallAnAPI/appId/"+$serviceAadApplication.AppId+"/objectId/"+$serviceAadApplication.ObjectId+"/isMSAApp/"
+   $servicePortalUrl = "https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/Manifest/appId/"+$serviceAadApplication.AppId+"/objectId/"+$serviceAadApplication.ObjectId+"/isMSAApp/"
    Add-Content -Value "<tr><td>service</td><td>$currentAppId</td><td><a href='$servicePortalUrl'>openidconnect-v2</a></td></tr>" -Path createdApps.html
 
    $requiredResourcesAccess = New-Object System.Collections.Generic.List[Microsoft.Open.AzureAD.Model.RequiredResourceAccess]
@@ -211,11 +211,13 @@ Function ConfigureApplications
    Write-Host "Updating the sample code ($configFile)"
    ReplaceSetting -configFilePath $configFile -key "ida:ClientId" -newValue $serviceAadApplication.AppId
    ReplaceSetting -configFilePath $configFile -key "ida:ClientSecret" -newValue $serviceAppKey
-   Write-Host ""
+   Write-Host "" 
+   Write-Host -ForegroundColor Green "------------------------------------------------------------------------------------------------" 
    Write-Host "IMPORTANT: Please follow the instructions below to complete a few manual step(s) in the Azure portal":
    Write-Host "- For 'service'"
    Write-Host "  - Navigate to '$servicePortalUrl'"
-   Write-Host "  - Navigate to the portal and change the ','signInAudeince' to 'AzureADandPersonalMicrosoftAccount'  in the app's manifest !"
+   Write-Host "  - Navigate to the portal and change the ','signInAudeince' to 'AzureADandPersonalMicrosoftAccount'  in the app's manifest !" -ForegroundColor Red 
+   Write-Host -ForegroundColor Green "------------------------------------------------------------------------------------------------" 
 
    Add-Content -Value "</tbody></table></body></html>" -Path createdApps.html  
 }
