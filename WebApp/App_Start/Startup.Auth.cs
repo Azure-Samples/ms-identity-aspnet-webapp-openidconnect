@@ -6,6 +6,7 @@ using Microsoft.Owin.Security.Cookies;
 using Microsoft.Owin.Security.Notifications;
 using Microsoft.Owin.Security.OpenIdConnect;
 using Owin;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using WebApp.Utils;
 
@@ -61,9 +62,9 @@ namespace WebApp
 
         private async Task OnAuthorizationCodeReceived(AuthorizationCodeReceivedNotification context)
         {
-            // Upon successful sign in, get the acess token & cache it using MSAL
-            IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
-            AuthenticationResult result = await cc.AcquireTokenByAuthorizationCode(new[] { "Mail.Read" }, context.Code).ExecuteAsync();
+            // Upon successful sign in, get the access token & cache it using MSAL
+            IConfidentialClientApplication clientApp = MsalAppBuilder.BuildConfidentialClientApplication(new ClaimsPrincipal(context.AuthenticationTicket.Identity));
+            AuthenticationResult result = await clientApp.AcquireTokenByAuthorizationCode(new[] { "Mail.Read" }, context.Code).ExecuteAsync();
         }
 
         private Task OnAuthenticationFailed(AuthenticationFailedNotification<OpenIdConnectMessage, OpenIdConnectAuthenticationOptions> notification)

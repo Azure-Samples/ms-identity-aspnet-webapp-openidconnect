@@ -24,6 +24,8 @@ SOFTWARE.
 
 using Microsoft.Identity.Client;
 using System;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace WebApp.Utils
 {
@@ -31,17 +33,22 @@ namespace WebApp.Utils
     {
         public static IConfidentialClientApplication BuildConfidentialClientApplication()
         {
+            return BuildConfidentialClientApplication(ClaimsPrincipal.Current);
+        }
+
+        public static IConfidentialClientApplication BuildConfidentialClientApplication(ClaimsPrincipal currentUser)
+        {
             IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(Globals.ClientId)
                   .WithClientSecret(Globals.ClientSecret)
                   .WithRedirectUri(Globals.RedirectUri)
                   .WithAuthority(new Uri(Globals.Authority))
                   .Build();
 
-            MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache);
+            MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache, currentUser ?? ClaimsPrincipal.Current);
             return clientapp;
         }
 
-        public static void ClearUserTokenCache()
+        public static async Task ClearUserTokenCache()
         {
             IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(Globals.ClientId)
                   .WithClientSecret(Globals.ClientSecret)
@@ -51,6 +58,9 @@ namespace WebApp.Utils
 
             // We only clear the user's tokens.
             MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache);
+            var userAccount = await clientapp.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
+
+            await clientapp.RemoveAsync(userAccount);
             userTokenCache.Clear();
         }
     }

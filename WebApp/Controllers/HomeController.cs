@@ -44,7 +44,7 @@ namespace WebApp.Controllers
         [Authorize]
         public async Task<ActionResult> SendMail()
         {
-            // Before we render the send email screen, we use the incremental consent to obtain and cache the aceess token with the correct scopes
+            // Before we render the send email screen, we use the incremental consent to obtain and cache the access token with the correct scopes
             IConfidentialClientApplication app = MsalAppBuilder.BuildConfidentialClientApplication();
             AuthenticationResult result = null;
             var accounts = await app.GetAccountsAsync();

@@ -7,6 +7,7 @@ using Microsoft.Owin.Security.Cookies;
 using Microsoft.Owin.Security.OpenIdConnect;
 using Microsoft.Owin.Security;
 using WebApp.Utils;
+using System.Threading.Tasks;
 
 namespace WebApp.Controllers
 {
@@ -21,9 +22,9 @@ namespace WebApp.Controllers
             }
         }
         
-        public void SignOut()
+        public async Task SignOut()
         {
-            MsalAppBuilder.ClearUserTokenCache();
+            await MsalAppBuilder.ClearUserTokenCache();
 
             // Send an OpenID Connect sign-out request.
             HttpContext.GetOwinContext().Authentication.SignOut(OpenIdConnectAuthenticationDefaults.AuthenticationType, CookieAuthenticationDefaults.AuthenticationType);
