@@ -44,7 +44,9 @@ namespace WebApp.Utils
                   .WithAuthority(new Uri(Globals.Authority))
                   .Build();
 
+            // After the ConfidentialClientApplication is created, we overwrite its default UserTokenCache with our implementation
             MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache, currentUser ?? ClaimsPrincipal.Current);
+
             return clientapp;
         }
 

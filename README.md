@@ -71,15 +71,20 @@ There is one project in this sample. To register it, you can:
   - modify the Visual Studio projects' configuration files.
 
 If you want to use this automation:
+
 1. On Windows run PowerShell and navigate to the root of the cloned directory
 1. In PowerShell run:
+
    ```PowerShell
    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process -Force
    ```
+
 1. Run the script to create your Azure AD application and configure the code of the sample application accordinly. 
+
    ```PowerShell
    .\AppCreationScripts\Configure.ps1
    ```
+
    > Remember to make the manual change in the manifest for the `signInAudience` as explained below.
 
    > Other ways of running the scripts are described in [App Creation Scripts](./AppCreationScripts/AppCreationScripts.md)
@@ -192,27 +197,30 @@ app.UseOpenIdConnectAuthentication(
     new OpenIdConnectAuthenticationOptions
     {
         // The `Authority` represents the v2.0 endpoint - https://login.microsoftonline.com/common/v2.0
-        ClientId = clientId,
-        Authority = String.Format(CultureInfo.InvariantCulture, aadInstance, "common", "/v2.0"),
-        RedirectUri = redirectUri,
-        Scope = "openid  profile offline_access Mail.Read Mail.Send",
-        PostLogoutRedirectUri = redirectUri,
+        Authority = Globals.Authority,
+        ClientId = Globals.ClientId,
+        RedirectUri = Globals.RedirectUri,
+        PostLogoutRedirectUri = Globals.RedirectUri,
+        Scope = Globals.BasicSignInScopes + " Mail.Read", // a basic set of permissions for user sign in & profile access "openid profile offline_access"
         TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = false,
-            // In a real application you would use IssuerValidator for additional checks, like making s
-            // IssuerValidator = (issuer, token, tvp) =>
-            // {
-            // if (MyCustomTenantValidation(issuer))
-            // {
-            //   return issuer;
-            // }
-            // else
-            // {
-            //  throw new SecurityTokenInvalidIssuerException("Invalid issuer");
-            // }
-            //},
-},
+            // In a real application you would use IssuerValidator for additional checks, like making sure the user's organization has signed up for your app.
+            //     IssuerValidator = (issuer, token, tvp) =>
+            //     {
+            //        //if(MyCustomTenantValidation(issuer))
+            //        return issuer;
+            //        //else
+            //        //    throw new SecurityTokenInvalidIssuerException("Invalid issuer");
+            //    },
+            //NameClaimType = "name",
+        },
+        Notifications = new OpenIdConnectAuthenticationNotifications()
+        {
+            AuthorizationCodeReceived = OnAuthorizationCodeReceived,
+            AuthenticationFailed = OnAuthenticationFailed,
+        }
+    });
 ```
 
 Important things to notice:
@@ -223,29 +231,31 @@ Important things to notice:
 
 ### Initial token acquisition
 
-This sample makes use of OpenId Connect hybrid flow, where at authentication time the app receives both sign in info the [id_token](https://docs.microsoft.com/en-us/azure/active-directory/develop/id-tokens) and artifacts (in this case, an [authorization code](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow)) that the app can use for obtaining an [access token](https://docs.microsoft.com/en-us/azure/active-directory/develop/access-tokens). That token can be used to access other resources - in this sample, the Microsoft Graph, for the purpose of reading the user's mailbox.
+This sample makes use of OpenId Connect hybrid flow, where at authentication time the app receives both sign in info, the  [id_token](https://docs.microsoft.com/en-us/azure/active-directory/develop/id-tokens)  and artifacts (in this case, an  [authorization code](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow)) that the app can use for obtaining an [access token](https://docs.microsoft.com/en-us/azure/active-directory/develop/access-tokens). This access token can be used to access other resources - in this sample, the Microsoft Graph, for the purpose of reading the user's mailbox.
 
-This sample shows how to use MSAL to redeem the authorization code into an access token, which is saved in a cache along with any other useful artifact (such as associated [refresh_tokens](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow#refresh-the-access-token)) so that it can be used later on in the application (from the controllers' actions).
+This sample shows how to use MSAL to redeem the authorization code into an access token, which is saved in a cache along with any other useful artifact (such as associated  [refresh_tokens](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow#refresh-the-access-token)) so that it can be used later on in the application from the controllers' actions to fetch access tokens after they are expired.
 
 The redemption takes place in the `AuthorizationCodeReceived` notification of the authorization middleware. Here there's the relevant code:
 
 ```CSharp
-AuthorizationCodeReceived = async (context) =>
-{
-            IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
-            AuthenticationResult result = await cc.AcquireTokenByAuthorizationCode(new[] { "Mail.Read" }, context.Code).ExecuteAsync();
-
+        private async Task OnAuthorizationCodeReceived(AuthorizationCodeReceivedNotification context)
+        {
+            // Upon successful sign in, get the access token & cache it using MSAL
+            IConfidentialClientApplication clientApp = MsalAppBuilder.BuildConfidentialClientApplication(new ClaimsPrincipal(context.AuthenticationTicket.Identity));
+            AuthenticationResult result = await clientApp.AcquireTokenByAuthorizationCode(new[] { "Mail.Read" }, context.Code).ExecuteAsync();
+        }
 ```
 
 Important things to notice:
 
-- The `IConfidentialClientApplication` is the primitive that MSAL uses to model the Web application. As such, it is initialized with the main application's coordinates.
-- The scope requested by `AcquireTokenByAuthorizationCode` is just the one required for invoking the API targeted by the application as part of its essential features. We'll see later that the app allows for extra scopes, but you can ignore those at this point.
+- The  `IConfidentialClientApplication`  is the primitive that MSAL uses to model the Web application. As such, it is initialized with the main application's coordinates.
+- The scope requested by  `AcquireTokenByAuthorizationCode`  is just the one required for invoking the API targeted by the application as part of its essential features. We'll see later that the app allows for extra scopes, but you can ignore those at this point.
+- The instance of `IConfidentialClientApplication` is created and attached to an instance of `MSALPerUserMemoryTokenCache`, which is a custom cache implementation that uses a shared instance of a [MemoryCache](https://docs.microsoft.com/en-us/dotnet/api/system.runtime.caching.memorycache?view=netframework-4.8) to cache tokens. When it acquires the access token, MSAL also saves this token in its token cache. When any code in the rest of the project tries to acquire an access token for Microsoft Graph with the same scope (Mail.Read), MSAL will return the cached token.
 
-The IConfidentialClientApplication is created in a separate function in the `MsalAppBuilder` class 
+The IConfidentialClientApplication is created in a separate function in the `MsalAppBuilder` class.
 
 ```Csharp
-        public static IConfidentialClientApplication BuildConfidentialClientApplication()
+        public static IConfidentialClientApplication BuildConfidentialClientApplication(ClaimsPrincipal currentUser)
         {
             IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(Globals.ClientId)
                   .WithClientSecret(Globals.ClientSecret)
@@ -253,7 +263,7 @@ The IConfidentialClientApplication is created in a separate function in the `Msa
                   .WithAuthority(new Uri(Globals.Authority))
                   .Build();
 
-            MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache);
+            MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache, currentUser ?? ClaimsPrincipal.Current);
             return clientapp;
         }
 ```
@@ -271,46 +281,48 @@ The `ReadMail` action in the `HomeController` class demonstrates how to take adv
 Here is the relevant code:
 
 ```CSharp
-        IConfidentialClientApplication app = MsalAppBuilder.BuildConfidentialClientApplication();
-        AuthenticationResult result = null;
-        var accounts = await app.GetAccountsAsync();
-        string[] scopes = { "Mail.Read" };
+    IConfidentialClientApplication app = MsalAppBuilder.BuildConfidentialClientApplication();
+    AuthenticationResult result = null;
+    var accounts = await app.GetAccountsAsync();
+    string[] scopes = { "Mail.Read" };
 
-        try
-        {
-            // try to get token silently
-            result = await app.AcquireTokenSilent(scopes, accounts.FirstOrDefault()).ExecuteAsync().ConfigureAwait(false);
-        }
-        catch (MsalUiRequiredException ex)
-        {
-            // A MsalUiRequiredException happened on AcquireTokenSilentAsync.
-            // This indicates you need to call AcquireTokenAsync to acquire a token
-            Debug.WriteLine($"MsalUiRequiredException: {ex.Message}");
+    try
+    {
+        // try to get token silently
+        result = await app.AcquireTokenSilent(scopes, accounts.FirstOrDefault()).ExecuteAsync().ConfigureAwait(false);
+    }
+    catch (MsalUiRequiredException)
+    {
+        ViewBag.Relogin = "true";
+        return View();
+    }
+    catch (Exception eee)
+    {
+        ViewBag.Error = "An error has occurred. Details: " + eee.Message;
+        return View();
+    }
 
-            try
-            {
-                // Build the auth code request Uri
-                string authReqUrl = await OAuth2RequestManager.GenerateAuthorizationRequestUrl(scopes, app, HttpContext, Url);
-                ViewBag.AuthorizationRequest = authReqUrl;
-                ViewBag.Relogin = "true";
-            }
-            catch (MsalException msalex)
-            {
-                Response.Write($"Error Acquiring Token:{System.Environment.NewLine}{msalex}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Response.Write($"Error Acquiring Token Silently:{System.Environment.NewLine}{ex}");
-        }
+    if (result != null)
+    {
+        // Use the token to read email
+        HttpClient hc = new HttpClient();
+        hc.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", result.AccessToken);
+        HttpResponseMessage hrm = await hc.GetAsync("https://graph.microsoft.com/v1.0/me/messages");
+
+        string rez = await hrm.Content.ReadAsStringAsync();
+        ViewBag.Message = rez;
+    }
+
+    return View();
+}
 ```
 
 The idea is simple. The code creates a new instance of `IConfidentialClientApplication` with the exact same coordinates as the ones used when redeeming the authorization code at authentication time. In particular, note that the exact same cache is used.
 That done, all you need to do is to invoke `AcquireTokenSilent`, asking for the scopes you need. MSAL will look up the cache and return any cached token, which matches with the requirement. If such access tokens are expired or no suitable access tokens are present, but there is an associated refresh token, MSAL will automatically use that to get a new access token and return it transparently.
 
-In the case in which refresh tokens are not present or they fail to obtain a new access token, MSAL will throw `MsalUiRequiredException`. That means that in order to obtain the requested token, the user must go through an interactive experience.
+In the case in which refresh tokens are not present or they fail to obtain a new access token, MSAL will throw `MsalUiRequiredException`. That means that in order to obtain the requested token, the user must go through an interactive sign-in experience.
 
-In the case of this sample, the `Mail.Read` permission is obtained as part of the login process - hence we need to trigger a new login; however we can't just redirect the user without warning, as it might be disorienting (what is happening, or why, would not be obvious to the user) and there might still be things they can do with the app that do not entail accessing mail. For that reason, the sample simply signals to the view to show a warning - and to offer a link to an action (`RefreshSession`) that the user can leverage for explicitly initiating the reauthentication process.
+In the case of this sample, the `Mail.Read` permission is obtained as part of the login process - hence we need to trigger a new login; however we can't just redirect the user without warning, as it might be disorienting (what is happening, or why, would not be obvious to the user) and there might still be things they can do with the app that do not entail accessing mail. For that reason, the sample simply signals to the view to show a warning - and to offer a link to an action (`RefreshSession`) that the user can leverage for explicitly initiating the re-authentication process.
 
 ### Handling incremental consent and OAuth2 code redemption
 
@@ -340,6 +352,36 @@ app.UseOpenIdConnectAuthentication(
 ```
 
 Note that the custom middleware is provided only as an example, and it has numerous limitations (like a hard dependency on `MSALPerUserMemoryTokenCache`) that limit its applicability outside of this scenario.
+
+## How to deploy this sample to Azure
+
+This project has one WebApp / Web API projects. To deploy them to Azure Web Sites, you'll need, for each one, to:
+
+- create an Azure Web Site
+- publish the Web App / Web APIs to the web site, and
+- update its client(s) to call the web site instead of IIS Express.
+
+### Create and publish the `openidconnect-v2` to an Azure Web Site
+
+1. Sign in to the [Azure portal](https://portal.azure.com).
+1. Click `Create a resource` in the top left-hand corner, select **Web** --> **Web App**, and give your web site a name, for example, `openidconnect-v2-contoso.azurewebsites.net`.
+1. Thereafter select the `Subscription`, `Resource Group`, `App service plan and Location`. `OS` will be **Windows** and `Publish` will be **Code**.
+1. Click `Create` and wait for the App Service to be created.
+1. Once you get the `Deployment succeeded` notification, then click on `Go to resource` to navigate to the newly created App service.
+1. Once the web site is created, locate it it in the **Dashboard** and click it to open **App Services** **Overview** screen.
+1. From the **Overview** tab of the App Service, download the publish profile by clicking the **Get publish profile** link and save it.  Other deployment mechanisms, such as from source control, can also be used.
+1. Switch to Visual Studio and go to the openidconnect-v2 project.  Right click on the project in the Solution Explorer and select **Publish**.  Click **Import Profile** on the bottom bar, and import the publish profile that you downloaded earlier.
+1. Click on **Configure** and in the `Connection tab`, update the Destination URL so that it is a `https` in the home page url, for example [https://openidconnect-v2-contoso.azurewebsites.net](https://openidconnect-v2-contoso.azurewebsites.net). Click **Next**.
+1. On the Settings tab, make sure `Enable Organizational Authentication` is NOT selected.  Click **Save**. Click on **Publish** on the main screen.
+1. Visual Studio will publish the project and automatically open a browser to the URL of the project.  If you see the default web page of the project, the publication was successful.
+
+### Update the Active Directory tenant application registration for `openidconnect-v2`
+
+1. Navigate back to to the [Azure portal](https://portal.azure.com).
+In the left-hand navigation pane, select the **Azure Active Directory** service, and then select **App registrations (Preview)**.
+1. In the resultant screen, select the `openidconnect-v2` application.
+1. From the *Branding* menu, update the **Home page URL**, to the address of your service, for example [https://openidconnect-v2-contoso.azurewebsites.net](https://openidconnect-v2-contoso.azurewebsites.net). Save the configuration.
+1. Add the same URL in the list of values of the *Authentication -> Redirect URIs* menu. If you have multiple redirect urls, make sure that there a new entry using the App service's Uri for each redirect url.
 
 ## Community Help and Support
 
