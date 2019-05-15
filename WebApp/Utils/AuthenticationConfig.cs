@@ -27,7 +27,7 @@ using System.Globalization;
 
 namespace WebApp.Utils
 {
-    public static class Globals
+    public static class AuthenticationConfig
     {
         public const string IssuerClaim = "iss";
         public const string TenantIdClaimType = "http://schemas.microsoft.com/identity/claims/tenantid";

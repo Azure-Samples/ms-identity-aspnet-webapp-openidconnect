@@ -24,9 +24,9 @@ namespace WebApp
             app.UseOAuth2CodeRedeemer(
                 new OAuth2CodeRedeemerOptions
                 {
-                    ClientId = Globals.ClientId,
-                    ClientSecret = Globals.ClientSecret,
-                    RedirectUri = Globals.RedirectUri
+                    ClientId = AuthenticationConfig.ClientId,
+                    ClientSecret = AuthenticationConfig.ClientSecret,
+                    RedirectUri = AuthenticationConfig.RedirectUri
                 }
                 );
 
@@ -34,11 +34,11 @@ namespace WebApp
                 new OpenIdConnectAuthenticationOptions
                 {
                     // The `Authority` represents the v2.0 endpoint - https://login.microsoftonline.com/common/v2.0
-                    Authority = Globals.Authority,
-                    ClientId = Globals.ClientId,
-                    RedirectUri = Globals.RedirectUri,
-                    PostLogoutRedirectUri = Globals.RedirectUri,
-                    Scope = Globals.BasicSignInScopes + " Mail.Read", // a basic set of permissions for user sign in & profile access "openid profile offline_access"
+                    Authority = AuthenticationConfig.Authority,
+                    ClientId = AuthenticationConfig.ClientId,
+                    RedirectUri = AuthenticationConfig.RedirectUri,
+                    PostLogoutRedirectUri = AuthenticationConfig.RedirectUri,
+                    Scope = AuthenticationConfig.BasicSignInScopes + " Mail.Read", // a basic set of permissions for user sign in & profile access "openid profile offline_access"
                     TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = false,

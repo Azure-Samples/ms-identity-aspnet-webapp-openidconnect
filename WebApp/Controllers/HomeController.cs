@@ -42,6 +42,7 @@ namespace WebApp.Controllers
         }
 
         [Authorize]
+		[HttpGet]
         public async Task<ActionResult> SendMail()
         {
             // Before we render the send email screen, we use the incremental consent to obtain and cache the access token with the correct scopes
@@ -120,12 +121,18 @@ namespace WebApp.Controllers
 
             try
             {
-                // try to get token silently
-                result = await app.AcquireTokenSilent(scopes, accounts.FirstOrDefault()).ExecuteAsync().ConfigureAwait(false);
+				// try to get an already cached token
+				result = await app.AcquireTokenSilent(scopes, accounts.FirstOrDefault()).ExecuteAsync().ConfigureAwait(false);
             }
-            catch (Exception eee)
+            catch (Exception ex)
             {
-                ViewBag.Error = "An error has occurred acquiring the token from cache. Details: " + eee.Message;
+				/*
+				 * When the user access this page (from the HTTP GET action result) we check if they have the scope "Mail.Send" and 
+				 * we handle the additional consent step in case it is needed. Then, we acquire an access token and MSAL cache it for us.
+				 * So in this HTTP POST action result, we can always expect a token to be in cache. If they are not in the cache, 
+				 * it means that the user accessed this route via an unsual way.
+				 */
+				ViewBag.Error = "An error has occurred acquiring the token from cache. Details: " + ex.Message;
                 return View();
             }
 
