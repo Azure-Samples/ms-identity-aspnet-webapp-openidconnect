@@ -38,10 +38,10 @@ namespace WebApp.Utils
 
         public static IConfidentialClientApplication BuildConfidentialClientApplication(ClaimsPrincipal currentUser)
         {
-            IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(Globals.ClientId)
-                  .WithClientSecret(Globals.ClientSecret)
-                  .WithRedirectUri(Globals.RedirectUri)
-                  .WithAuthority(new Uri(Globals.Authority))
+            IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(AuthenticationConfig.ClientId)
+                  .WithClientSecret(AuthenticationConfig.ClientSecret)
+                  .WithRedirectUri(AuthenticationConfig.RedirectUri)
+                  .WithAuthority(new Uri(AuthenticationConfig.Authority))
                   .Build();
 
             // After the ConfidentialClientApplication is created, we overwrite its default UserTokenCache with our implementation
@@ -52,10 +52,10 @@ namespace WebApp.Utils
 
         public static async Task ClearUserTokenCache()
         {
-            IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(Globals.ClientId)
-                  .WithClientSecret(Globals.ClientSecret)
-                  .WithRedirectUri(Globals.RedirectUri)
-                  .WithAuthority(new Uri(Globals.Authority))
+            IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(AuthenticationConfig.ClientId)
+                  .WithClientSecret(AuthenticationConfig.ClientSecret)
+                  .WithRedirectUri(AuthenticationConfig.RedirectUri)
+                  .WithAuthority(new Uri(AuthenticationConfig.Authority))
                   .Build();
 
             // We only clear the user's tokens.

@@ -45,15 +45,16 @@ namespace WebApp.Utils
         /// </summary>
         internal readonly MemoryCache memoryCache = MemoryCache.Default;
 
-        /// <summary>
-        /// The duration till the tokens are kept in memory cache. In production, a higher value , upto 90 days is recommended.
-        /// </summary>
-        private readonly DateTimeOffset cacheDuration = DateTimeOffset.Now.AddHours(48);
+		/// <summary>
+		/// The duration utill the tokens are kept in memory cache. In production, a higher value up to 90 days is recommended.
+		/// The token cache will contain both AccessToken and RefreshToken, which they last 1h and 90 days, respectively, by default.
+		/// </summary>
+		private readonly DateTimeOffset cacheDuration = DateTimeOffset.Now.AddHours(48);
 
         /// <summary>
         /// The internal handle to the client's instance of the Cache
         /// </summary>
-        private ITokenCache ApptokenCache;
+        private ITokenCache AppTokenCache;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MSALAppMemoryTokenCache"/> class.
@@ -62,17 +63,17 @@ namespace WebApp.Utils
         /// <param name="clientId">The application's id (Client ID).</param>
         public MSALAppMemoryTokenCache(ITokenCache tokenCache, string clientId)
         {
-            this.AppCacheId = clientId + "_AppTokenCache";
+            AppCacheId = clientId + "_AppTokenCache";
 
-            if (this.ApptokenCache == null)
+            if (AppTokenCache == null)
             {
-                this.ApptokenCache = tokenCache;
-                this.ApptokenCache.SetBeforeAccess(this.AppTokenCacheBeforeAccessNotification);
-                this.ApptokenCache.SetAfterAccess(this.AppTokenCacheAfterAccessNotification);
-                this.ApptokenCache.SetBeforeWrite(this.AppTokenCacheBeforeWriteNotification);
+                AppTokenCache = tokenCache;
+                AppTokenCache.SetBeforeAccess(AppTokenCacheBeforeAccessNotification);
+                AppTokenCache.SetAfterAccess(AppTokenCacheAfterAccessNotification);
+                AppTokenCache.SetBeforeWrite(AppTokenCacheBeforeWriteNotification);
             }
 
-            this.LoadAppTokenCacheFromMemory();
+            LoadAppTokenCacheFromMemory();
         }
 
         /// <summary>
@@ -90,8 +91,8 @@ namespace WebApp.Utils
         private void LoadAppTokenCacheFromMemory()
         {
             // Ideally, methods that load and persist should be thread safe. MemoryCache.Get() is thread safe.
-            byte[] tokenCacheBytes = (byte[])this.memoryCache.Get(this.AppCacheId);
-            this.ApptokenCache.DeserializeMsalV3(tokenCacheBytes);
+            byte[] tokenCacheBytes = (byte[])memoryCache.Get(AppCacheId);
+            AppTokenCache.DeserializeMsalV3(tokenCacheBytes);
         }
 
         /// <summary>
@@ -101,15 +102,15 @@ namespace WebApp.Utils
         {
             // Ideally, methods that load and persist should be thread safe.MemoryCache.Get() is thread safe.
             // Reflect changes in the persistence store
-            this.memoryCache.Set(this.AppCacheId, this.ApptokenCache.SerializeMsalV3(), this.cacheDuration);
+            memoryCache.Set(AppCacheId, AppTokenCache.SerializeMsalV3(), cacheDuration);
         }
 
         public void Clear()
         {
-            this.memoryCache.Remove(this.AppCacheId);
+            memoryCache.Remove(AppCacheId);
 
             // Nulls the currently deserialized instance
-            this.LoadAppTokenCacheFromMemory();
+            LoadAppTokenCacheFromMemory();
         }
 
         /// <summary>
@@ -118,7 +119,7 @@ namespace WebApp.Utils
         /// <param name="args">Contains parameters used by the MSAL call accessing the cache.</param>
         private void AppTokenCacheBeforeAccessNotification(TokenCacheNotificationArgs args)
         {
-            this.LoadAppTokenCacheFromMemory();
+            LoadAppTokenCacheFromMemory();
         }
 
         /// <summary>
@@ -130,7 +131,7 @@ namespace WebApp.Utils
             // if the access operation resulted in a cache update
             if (args.HasStateChanged)
             {
-                this.PersistAppTokenCache();
+                PersistAppTokenCache();
             }
         }
     }
