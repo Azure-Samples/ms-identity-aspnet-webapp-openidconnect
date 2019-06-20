@@ -62,7 +62,7 @@ The `Configure.ps1` will stop if it tries to create an Azure AD application whic
 ### (Optionally) install AzureAD PowerShell modules
 The scripts install the required PowerShell module (AzureAD) for the current user if needed. However, if you want to install if for all users on the machine, you can follow the following steps:
 
-4. If you have not completed this step before, in the PowerShell window, install the AzureAD PowerShell modules. For this:
+4. If you have never done it already, in the PowerShell window, install the AzureAD PowerShell modules. For this:
 
    1. Open PowerShell as admin (On Windows, Search Powershell in the search bar, right click on it and select Run as administrator).
    2. Type:
@@ -120,7 +120,7 @@ Of course, in real life, you might already get the password as a `SecureString`.
 
 #### Option 3 (Interactive, but create apps in a specified tenant)
 
-  If you want to create the apps in a particular tenant, you can use the following option:
+  if you want to create the apps in a particular tenant, you can use the following option:
 - open the [Azure portal](https://portal.azure.com)
 - Select the Azure Active directory you are interested in (in the combo-box below your name on the top right of the browser window)
 - Find the "Active Directory" object in this tenant

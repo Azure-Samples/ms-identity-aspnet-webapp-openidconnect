@@ -45,16 +45,11 @@ namespace WebApp.Utils
         /// </summary>
         internal readonly MemoryCache memoryCache = MemoryCache.Default;
 
-		/// <summary>
-		/// The duration utill the tokens are kept in memory cache. In production, a higher value up to 90 days is recommended.
-		/// The token cache will contain both AccessToken and RefreshToken, which they last 1h and 90 days, respectively, by default.
-		/// </summary>
-		private readonly DateTimeOffset cacheDuration = DateTimeOffset.Now.AddHours(48);
-
         /// <summary>
-        /// The internal handle to the client's instance of the Cache
+        /// The duration utill the tokens are kept in memory cache. In production, a higher value up to 90 days is recommended.
+        /// The token cache will contain both AccessToken and RefreshToken, which they last 1h and 90 days, respectively, by default.
         /// </summary>
-        private ITokenCache AppTokenCache;
+        private readonly DateTimeOffset cacheDuration = DateTimeOffset.Now.AddHours(48);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MSALAppMemoryTokenCache"/> class.
@@ -65,15 +60,9 @@ namespace WebApp.Utils
         {
             AppCacheId = clientId + "_AppTokenCache";
 
-            if (AppTokenCache == null)
-            {
-                AppTokenCache = tokenCache;
-                AppTokenCache.SetBeforeAccess(AppTokenCacheBeforeAccessNotification);
-                AppTokenCache.SetAfterAccess(AppTokenCacheAfterAccessNotification);
-                AppTokenCache.SetBeforeWrite(AppTokenCacheBeforeWriteNotification);
-            }
-
-            LoadAppTokenCacheFromMemory();
+            tokenCache.SetBeforeAccess(AppTokenCacheBeforeAccessNotification);
+            tokenCache.SetAfterAccess(AppTokenCacheAfterAccessNotification);
+            tokenCache.SetBeforeWrite(AppTokenCacheBeforeWriteNotification);
         }
 
         /// <summary>
@@ -85,32 +74,9 @@ namespace WebApp.Utils
             // Since we are using a MemoryCache ,whose methods are threads safe, we need not to do anything in this handler.
         }
 
-        /// <summary>
-        /// Loads the application's token from memory cache.
-        /// </summary>
-        private void LoadAppTokenCacheFromMemory()
-        {
-            // Ideally, methods that load and persist should be thread safe. MemoryCache.Get() is thread safe.
-            byte[] tokenCacheBytes = (byte[])memoryCache.Get(AppCacheId);
-            AppTokenCache.DeserializeMsalV3(tokenCacheBytes);
-        }
-
-        /// <summary>
-        /// Persists the application's token to the cache.
-        /// </summary>
-        private void PersistAppTokenCache()
-        {
-            // Ideally, methods that load and persist should be thread safe.MemoryCache.Get() is thread safe.
-            // Reflect changes in the persistence store
-            memoryCache.Set(AppCacheId, AppTokenCache.SerializeMsalV3(), cacheDuration);
-        }
-
         public void Clear()
         {
             memoryCache.Remove(AppCacheId);
-
-            // Nulls the currently deserialized instance
-            LoadAppTokenCacheFromMemory();
         }
 
         /// <summary>
@@ -119,7 +85,9 @@ namespace WebApp.Utils
         /// <param name="args">Contains parameters used by the MSAL call accessing the cache.</param>
         private void AppTokenCacheBeforeAccessNotification(TokenCacheNotificationArgs args)
         {
-            LoadAppTokenCacheFromMemory();
+            // Load the token cache from memory
+            byte[] tokenCacheBytes = (byte[])this.memoryCache.Get(AppCacheId);
+            args.TokenCache.DeserializeMsalV3(tokenCacheBytes, shouldClearExistingCache: true);
         }
 
         /// <summary>
@@ -131,7 +99,9 @@ namespace WebApp.Utils
             // if the access operation resulted in a cache update
             if (args.HasStateChanged)
             {
-                PersistAppTokenCache();
+                // Reflect changes in the persistence store
+                this.memoryCache.Set(AppCacheId, args.TokenCache.SerializeMsalV3(), cacheDuration);
+
             }
         }
     }

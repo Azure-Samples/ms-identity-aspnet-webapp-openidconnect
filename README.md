@@ -4,9 +4,11 @@ platforms: dotnet
 author: jmprieur
 level: 400
 client: ASP.NET Web App
+service: Microsoft Graph
 endpoint: AAD V2
 ---
-# Integrate Microsoft identity and the Microsoft Graph into a web application using OpenID Connect
+# Use OpenID Connect to sign in users to Microsoft identity platform (formerly Azure Active Directory for developers) and execute Microsoft Graph operations using incremental consent
+
 
 ![Build Badge](https://identitydivision.visualstudio.com/_apis/public/build/definitions/a7934fdd-dcde-4492-a406-7fad6ac00e17/514/badge)
 
@@ -14,11 +16,11 @@ endpoint: AAD V2
 
 ### Overview
 
-This sample showcases how to develop a web application that handles sign on via the unified Azure AD and MSA endpoint, so that users can sign in to the app using both their work/school account or Microsoft account. The application is implemented with ASP.NET MVC 4.6, while the web sign-on functionality is implemented via ASP.NET OpenId Connect OWIN middleware.
+This sample showcases how to develop a web application that handles sign using the Microsoft identity platform (formerly Azure Active Directory for developers). It shows you how to use the new unified signing-in model that can be used to sign-in users to the app with both their [work/school account  (Azure AD account) or Microsoft account (MSA)](https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison). The application is implemented as an ASP.NET MVC project, while the web sign-on functionality is implemented via ASP.NET OpenId Connect OWIN middleware.
 
-The sample also shows how to use MSAL.NET (Microsoft Authentication Library) to obtain a token for invoking the [Microsoft Graph](https://graph.microsoft.com). Specifically, the sample shows how to visualize the last email messages received by the signed in user, and how to send a mail message as the user using Microsoft Graph.
+The sample also shows how to use [MSAL.NET (Microsoft Authentication Library)](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet) to obtain an access token for [Microsoft Graph](https://graph.microsoft.com). Specifically, the sample shows how to retrieve the last email messages received by the signed in user, and how to send a mail message as the user using Microsoft Graph.
 
-Finally, the sample showcases a new capability introduced by the new authentication endpoint - the ability for one app to seek consent for new permissions [incrementally](https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison#incremental-and-dynamic-consent).
+Finally, the sample showcases a new capability introduced by the new Microsoft identity platform - the ability for one app to seek consent for new permissions [incrementally](https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison#incremental-and-dynamic-consent).
 
 For more information about how the protocols work in this scenario and other scenarios, see [Authentication Scenarios for Azure AD](http://go.microsoft.com/fwlink/?LinkId=394414).
 
@@ -57,9 +59,9 @@ From your shell or command line:
 git clone https://github.com/Azure-Samples/ms-identity-aspnet-webapp-openidconnect.git
 ```
 
-or download and exact the repository .zip file.
+or download and extract the repository .zip file.
 
-> Given that the name of the sample is pretty long, and so are the name of the referenced NuGet packages, you might want to clone it in a folder close to the root of your hard drive, to avoid file size limitations on Windows.
+> Given that the name of the sample is quiet long, and so are the names of the referenced NuGet packages, you might want to clone it in a folder close to the root of your hard drive, to avoid file size limitations on Windows.
 
 ### Step 2:  Register the sample application with your Azure Active Directory tenant
 
@@ -101,12 +103,18 @@ As a first step you'll need to:
 1. If your account is present in more than one Azure AD tenant, select your profile at the top right corner in the menu on top of the page, and then **switch directory**.
    Change your portal session to the desired Azure AD tenant.
 
-#### Register the service app (openidconnect-v2)
+As a first step you'll need to:
+
+1. Sign in to the [Azure portal](https://portal.azure.com) using either a work or school account or a personal Microsoft account.
+1. If your account is present in more than one Azure AD tenant, select your profile at the top right corner in the menu on top of the page, and then **switch directory**.
+   Change your portal session to the desired Azure AD tenant.
+
+#### Register the service app (MailApp-openidconnect-v2)
 
 1. Navigate to the Microsoft identity platform for developers [App registrations](https://go.microsoft.com/fwlink/?linkid=2083908) page.
 1. Select **New registration**.
 1. When the **Register an application page** appears, enter your application's registration information:
-   - In the **Name** section, enter a meaningful application name that will be displayed to users of the app, for example `openidconnect-v2`.
+   - In the **Name** section, enter a meaningful application name that will be displayed to users of the app, for example `MailApp-openidconnect-v2`.
    - Change **Supported account types** to **Accounts in any organizational directory and personal Microsoft accounts (e.g. Skype, Xbox, Outlook.com)**.
    - In the Redirect URI (optional) section, select **Web** in the combo-box and enter the following redirect URIs: `https://localhost:44326/`.
 1. Select **Register** to create the application.
@@ -130,6 +138,8 @@ As a first step you'll need to:
    - In the **Delegated permissions** section, ensure that the right permissions are checked: **openid**, **profile**, **offline_access**, **Mail.Read**. Use the search box if necessary.
    - Select the **Add permissions** button
 
+#### Change the application's manifest to enable both Work and School and Microsoft Accounts 
+
 1. Select the **Manifest** section for your app.
 1. Search for **signInAudience** and make sure it's set to **AzureADandPersonalMicrosoftAccount**
 
@@ -140,13 +150,14 @@ As a first step you'll need to:
 
 1. Click **Save** to save the app manifest.
 
-### Step 3:  Configure the Visual Studio project with your app coordinates
+#### Configure the service project
 
-1. Open the solution in Visual Studio 2017.
-2. Open the `web.config` file.
-3. Find the app key `ida:ClientSecret` and replace the value with the application secret you saved from step 2.
-4. Find the app key `ida:ClientId` and replace the value with the Application ID from the app registration portal, again in Step 2.
-5. If you changed the base URL of the sample, find the app key `ida:RedirectUri` and replace the value with the new base URL of the sample.
+> Note: if you used the setup scripts, the changes below will have been applied for you
+
+1. Open the solution in Visual Studio.
+1. Open the `web.config` file.
+1. Find the app key `ida:ClientId` and replace the existing value with the application ID (clientId) of the `MailApp-openidconnect-v2` application copied from the Azure portal.
+1. Find the app key `ida:ClientSecret` and replace the existing value with the key you saved during the creation of the `MailApp-openidconnect-v2` app, in the Azure portal.
 
 ### Step 5:  Run the sample
 

@@ -47,11 +47,6 @@ namespace WebApp.Utils
         private readonly DateTimeOffset cacheDuration = DateTimeOffset.Now.AddHours(48);
 
         /// <summary>
-        /// The internal handle to the client's instance of the Cache
-        /// </summary>
-        private ITokenCache UserTokenCache;
-
-        /// <summary>
         /// Once the user signes in, this will not be null and can be obtained via a call to Thread.CurrentPrincipal
         /// </summary>
         internal ClaimsPrincipal SignedInUser;
@@ -74,7 +69,7 @@ namespace WebApp.Utils
         {
             Initialize(tokenCache, user);
         }
-        
+
         /// <summary>Initializes the cache instance</summary>
         /// <param name="tokenCache">The ITokenCache passed through the constructor</param>
         /// <param name="user">The signed-in user for whom the cache needs to be established..</param>
@@ -82,18 +77,15 @@ namespace WebApp.Utils
         {
             SignedInUser = user;
 
-            UserTokenCache = tokenCache;
-            UserTokenCache.SetBeforeAccess(UserTokenCacheBeforeAccessNotification);
-            UserTokenCache.SetAfterAccess(UserTokenCacheAfterAccessNotification);
-            UserTokenCache.SetBeforeWrite(UserTokenCacheBeforeWriteNotification);
+            tokenCache.SetBeforeAccess(UserTokenCacheBeforeAccessNotification);
+            tokenCache.SetAfterAccess(UserTokenCacheAfterAccessNotification);
+            tokenCache.SetBeforeWrite(UserTokenCacheBeforeWriteNotification);
 
             if (SignedInUser == null)
             {
                 // No users signed in yet, so we return
                 return;
             }
-
-            LoadUserTokenCacheFromMemory();
         }
 
         /// <summary>
@@ -110,43 +102,11 @@ namespace WebApp.Utils
         }
 
         /// <summary>
-        /// Loads the user token cache from memory.
-        /// </summary>
-        private void LoadUserTokenCacheFromMemory()
-        {
-            string cacheKey = GetMsalAccountId();
-
-            if (string.IsNullOrWhiteSpace(cacheKey))
-                return;
-
-            // Ideally, methods that load and persist should be thread safe. MemoryCache.Get() is thread safe.
-            byte[] tokenCacheBytes = (byte[])memoryCache.Get(GetMsalAccountId());
-            UserTokenCache.DeserializeMsalV3(tokenCacheBytes);
-        }
-
-        /// <summary>
-        /// Persists the user token blob to the memoryCache.
-        /// </summary>
-        private void PersistUserTokenCache()
-        {
-            string cacheKey = GetMsalAccountId();
-
-            if (string.IsNullOrWhiteSpace(cacheKey))
-                return;
-
-            // Ideally, methods that load and persist should be thread safe.MemoryCache.Get() is thread safe.
-            memoryCache.Set(GetMsalAccountId(), UserTokenCache.SerializeMsalV3(), cacheDuration);
-        }
-
-        /// <summary>
         /// Clears the TokenCache's copy of this user's cache.
         /// </summary>
         public void Clear()
         {
             memoryCache.Remove(GetMsalAccountId());
-
-            // Nulls the currently deserialized instance
-            LoadUserTokenCacheFromMemory();
         }
 
         /// <summary>
@@ -160,7 +120,16 @@ namespace WebApp.Utils
             // if the access operation resulted in a cache update
             if (args.HasStateChanged)
             {
-                PersistUserTokenCache();
+                string cacheKey = args.Account?.HomeAccountId?.Identifier;
+
+                if (string.IsNullOrEmpty(cacheKey))
+                    cacheKey = GetMsalAccountId();
+
+                if (string.IsNullOrWhiteSpace(cacheKey))
+                    return;
+
+                // Ideally, methods that load and persist should be thread safe.MemoryCache.Get() is thread safe.
+                this.memoryCache.Set(cacheKey, args.TokenCache.SerializeMsalV3(), cacheDuration);
             }
         }
 
@@ -170,7 +139,16 @@ namespace WebApp.Utils
         /// <param name="args">Contains parameters used by the MSAL call accessing the cache.</param>
         private void UserTokenCacheBeforeAccessNotification(TokenCacheNotificationArgs args)
         {
-            LoadUserTokenCacheFromMemory();
+            string cacheKey = args.Account?.HomeAccountId?.Identifier;
+
+            if (string.IsNullOrWhiteSpace(cacheKey))
+                cacheKey = GetMsalAccountId();
+
+            if (string.IsNullOrWhiteSpace(cacheKey))
+                return;
+
+            byte[] tokenCacheBytes = (byte[])this.memoryCache.Get(cacheKey);
+            args.TokenCache.DeserializeMsalV3(tokenCacheBytes, shouldClearExistingCache: true);
         }
 
         /// <summary>
