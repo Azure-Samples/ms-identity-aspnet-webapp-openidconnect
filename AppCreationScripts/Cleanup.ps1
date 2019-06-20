@@ -49,14 +49,16 @@ This function removes the Azure AD applications for the sample. These applicatio
     # Removes the applications
     Write-Host "Cleaning-up applications from tenant '$tenantName'"
 
-    Write-Host "Removing 'service' (openidconnect-v2) if needed"
-    $app=Get-AzureADApplication -Filter "DisplayName eq 'openidconnect-v2'"  
-
-    if ($app)
+    Write-Host "Removing 'service' (MailApp-openidconnect-v2) if needed"
+    Get-AzureADApplication -Filter "DisplayName eq 'MailApp-openidconnect-v2'"  | ForEach-Object {Remove-AzureADApplication -ObjectId $_.ObjectId }
+    $apps = Get-AzureADApplication -Filter "DisplayName eq 'MailApp-openidconnect-v2'"
+    if ($apps)
     {
-        Remove-AzureADApplication -ObjectId $app.ObjectId
-        Write-Host "Removed openidconnect-v2."
+        Remove-AzureADApplication -ObjectId $apps.ObjectId
     }
-    }
+    Get-AzureRmADServicePrincipal -SearchString "MailApp-openidconnect-v2" | ForEach-Object {Remove-AzureRmADServicePrincipal -ObjectId $_.Id -Confirm:$false}
+    Write-Host "Removed MailApp-openidconnect-v2."
+
+}
 
 Cleanup -Credential $Credential -tenantId $TenantId

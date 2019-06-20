@@ -127,6 +127,8 @@ Function ConfigureApplications
    so that they are consistent with the Applications parameters
 #> 
 
+    $commonendpoint = "common"
+
     # $tenantId is the Active Directory Tenant. This is a GUID which represents the "Directory ID" of the AzureAD tenant
     # into which you want to create the apps. Look it up in the Azure portal in the "Properties" of the Azure AD.
 
@@ -160,16 +162,16 @@ Function ConfigureApplications
     $user = Get-AzureADUser -ObjectId $creds.Account.Id
 
    # Create the service AAD application
-   Write-Host "Creating the AAD application (openidconnect-v2)"
+   Write-Host "Creating the AAD application (MailApp-openidconnect-v2)"
    # Get a 2 years application key for the service Application
    $pw = ComputePassword
    $fromDate = [DateTime]::Now;
    $key = CreateAppKey -fromDate $fromDate -durationInYears 2 -pw $pw
    $serviceAppKey = $pw
-   $serviceAadApplication = New-AzureADApplication -DisplayName "openidconnect-v2" `
+   $serviceAadApplication = New-AzureADApplication -DisplayName "MailApp-openidconnect-v2" `
                                                    -HomePage "https://localhost:44326/" `
                                                    -ReplyUrls "https://localhost:44326/" `
-                                                   -IdentifierUris "https://$tenantName/openidconnect-v2" `
+                                                   -IdentifierUris "https://$tenantName/MailApp-openidconnect-v2" `
                                                    -AvailableToOtherTenants $True `
                                                    -PasswordCredentials $key `
                                                    -Oauth2AllowImplicitFlow $true `
@@ -182,16 +184,16 @@ Function ConfigureApplications
    $owner = Get-AzureADApplicationOwner -ObjectId $serviceAadApplication.ObjectId
    if ($owner -eq $null)
    { 
-    Add-AzureADApplicationOwner -ObjectId $serviceAadApplication.ObjectId -RefObjectId $user.ObjectId
-    Write-Host "'$($user.UserPrincipalName)' added as an application owner to app '$($serviceServicePrincipal.DisplayName)'"
+        Add-AzureADApplicationOwner -ObjectId $serviceAadApplication.ObjectId -RefObjectId $user.ObjectId
+        Write-Host "'$($user.UserPrincipalName)' added as an application owner to app '$($serviceServicePrincipal.DisplayName)'"
    }
 
-   Write-Host "Done creating the service application (openidconnect-v2)"
+   Write-Host "Done creating the service application (MailApp-openidconnect-v2)"
 
    # URL of the AAD application in the Azure portal
    # Future? $servicePortalUrl = "https://portal.azure.com/#@"+$tenantName+"/blade/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/Overview/appId/"+$serviceAadApplication.AppId+"/objectId/"+$serviceAadApplication.ObjectId+"/isMSAApp/"
-   $servicePortalUrl = "https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/Manifest/appId/"+$serviceAadApplication.AppId+"/objectId/"+$serviceAadApplication.ObjectId+"/isMSAApp/"
-   Add-Content -Value "<tr><td>service</td><td>$currentAppId</td><td><a href='$servicePortalUrl'>openidconnect-v2</a></td></tr>" -Path createdApps.html
+   $servicePortalUrl = "https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationMenuBlade/CallAnAPI/appId/"+$serviceAadApplication.AppId+"/objectId/"+$serviceAadApplication.ObjectId+"/isMSAApp/"
+   Add-Content -Value "<tr><td>service</td><td>$currentAppId</td><td><a href='$servicePortalUrl'>MailApp-openidconnect-v2</a></td></tr>" -Path createdApps.html
 
    $requiredResourcesAccess = New-Object System.Collections.Generic.List[Microsoft.Open.AzureAD.Model.RequiredResourceAccess]
 
@@ -211,14 +213,15 @@ Function ConfigureApplications
    Write-Host "Updating the sample code ($configFile)"
    ReplaceSetting -configFilePath $configFile -key "ida:ClientId" -newValue $serviceAadApplication.AppId
    ReplaceSetting -configFilePath $configFile -key "ida:ClientSecret" -newValue $serviceAppKey
-   Write-Host "" 
+   Write-Host ""
    Write-Host -ForegroundColor Green "------------------------------------------------------------------------------------------------" 
    Write-Host "IMPORTANT: Please follow the instructions below to complete a few manual step(s) in the Azure portal":
    Write-Host "- For 'service'"
    Write-Host "  - Navigate to '$servicePortalUrl'"
-   Write-Host "  - Navigate to the portal and change the ','signInAudeince' to 'AzureADandPersonalMicrosoftAccount'  in the app's manifest !" -ForegroundColor Red 
-   Write-Host -ForegroundColor Green "------------------------------------------------------------------------------------------------" 
+   Write-Host "  - Navigate to the portal and change the ','signInAudience' to 'AzureADandPersonalMicrosoftAccount'  in the app's manifest !" -ForegroundColor Red 
 
+   Write-Host -ForegroundColor Green "------------------------------------------------------------------------------------------------" 
+     
    Add-Content -Value "</tbody></table></body></html>" -Path createdApps.html  
 }
 

@@ -1,6 +1,6 @@
 {
   "Sample": {
-    "Title": "Integrate Microsoft identity and the Microsoft Graph into a web application using OpenID Connect",
+    "Title": "Use OpenID Connect to sign in users to Microsoft identity platform (formerly Azure Active Directory for developers) and execute Microsoft Graph operations using incremental consent",
     "Level": 400,
     "Client": ".NET Web App (MVC)",    
     "Service": "Microsoft Graph", 
@@ -14,7 +14,7 @@
   "AADApps": [
     {
       "Id": "service",
-      "Name": "openidconnect-v2",
+      "Name": "MailApp-openidconnect-v2",
       "Kind": "WebApp",
       "IsPublicClient": false,
       "HomePage": "https://localhost:44326/",
@@ -30,7 +30,7 @@
       ],
       "ManualSteps": [
         {
-          "Comment" :  "Navigate to the portal and change the ','signInAudeince' to 'AzureADandPersonalMicrosoftAccount'  in the app's manifest !"
+          "Comment" :  "Navigate to the portal and change the ','signInAudience' to 'AzureADandPersonalMicrosoftAccount'  in the app's manifest !"
         }
       ]
     }
