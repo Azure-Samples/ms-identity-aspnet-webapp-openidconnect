@@ -56,7 +56,7 @@ This function removes the Azure AD applications for the sample. These applicatio
     {
         Remove-AzureADApplication -ObjectId $apps.ObjectId
     }
-    Get-AzureRmADServicePrincipal -SearchString "MailApp-openidconnect-v2" | ForEach-Object {Remove-AzureRmADServicePrincipal -ObjectId $_.Id -Confirm:$false}
+    # Get-AzureRmADServicePrincipal -SearchString "MailApp-openidconnect-v2" | ForEach-Object {Remove-AzureRmADServicePrincipal -ObjectId $_.Id -Confirm:$false}
     Write-Host "Removed MailApp-openidconnect-v2."
 
 }
