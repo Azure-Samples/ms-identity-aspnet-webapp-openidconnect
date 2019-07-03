@@ -120,10 +120,7 @@ namespace WebApp.Utils
             // if the access operation resulted in a cache update
             if (args.HasStateChanged)
             {
-                string cacheKey = args.Account?.HomeAccountId?.Identifier;
-
-                if (string.IsNullOrEmpty(cacheKey))
-                    cacheKey = GetMsalAccountId();
+                string cacheKey = GetMsalAccountId();
 
                 if (string.IsNullOrWhiteSpace(cacheKey))
                     return;
@@ -139,10 +136,7 @@ namespace WebApp.Utils
         /// <param name="args">Contains parameters used by the MSAL call accessing the cache.</param>
         private void UserTokenCacheBeforeAccessNotification(TokenCacheNotificationArgs args)
         {
-            string cacheKey = args.Account?.HomeAccountId?.Identifier;
-
-            if (string.IsNullOrWhiteSpace(cacheKey))
-                cacheKey = GetMsalAccountId();
+            string cacheKey = GetMsalAccountId();
 
             if (string.IsNullOrWhiteSpace(cacheKey))
                 return;
