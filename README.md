@@ -28,7 +28,7 @@ For more information about Microsoft Graph, please visit the [Microsoft Graph ho
 
 ## Topology
 
-![Overview](./ReadmeFiles/Topology.png)
+<img alt="Overview" src="./ReadmeFiles/Topology.png" style="width:70%, height:70%" width="70%" />
 
 > Looking for previous versions of this code sample? Check out the tags on the [releases](../../releases) GitHub page.
 
