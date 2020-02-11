@@ -53,6 +53,11 @@ namespace WebApp.Utils
         {
             var userAgent = context.Request.Headers["User-Agent"];
 
+            if(string.IsNullOrEmpty(userAgent))
+            {
+                return false;
+            }
+
             // Cover all iOS based browsers here. This includes:
             // - Safari on iOS 12 for iPhone, iPod Touch, iPad
             // - WkWebview on iOS 12 for iPhone, iPod Touch, iPad

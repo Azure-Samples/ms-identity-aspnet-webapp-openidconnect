@@ -28,8 +28,7 @@ namespace WebApp
                     ClientId = AuthenticationConfig.ClientId,
                     ClientSecret = AuthenticationConfig.ClientSecret,
                     RedirectUri = AuthenticationConfig.RedirectUri
-                }
-                );
+                });
 
             app.UseOpenIdConnectAuthentication(
                 new OpenIdConnectAuthenticationOptions
