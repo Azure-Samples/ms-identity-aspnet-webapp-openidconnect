@@ -33,20 +33,14 @@ namespace WebApp.Utils
     {
         public static IConfidentialClientApplication BuildConfidentialClientApplication()
         {
-            return BuildConfidentialClientApplication(ClaimsPrincipal.Current);
-        }
-
-        public static IConfidentialClientApplication BuildConfidentialClientApplication(ClaimsPrincipal currentUser)
-        {
             IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(AuthenticationConfig.ClientId)
                   .WithClientSecret(AuthenticationConfig.ClientSecret)
                   .WithRedirectUri(AuthenticationConfig.RedirectUri)
                   .WithAuthority(new Uri(AuthenticationConfig.Authority))
                   .Build();
 
-            // After the ConfidentialClientApplication is created, we overwrite its default UserTokenCache with our implementation
-            MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache, currentUser ?? ClaimsPrincipal.Current);
-
+            // After the ConfidentialClientApplication is created, we overwrite its default UserTokenCache serialization with our implementation
+            MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache);
             return clientapp;
         }
 
@@ -63,7 +57,6 @@ namespace WebApp.Utils
             var userAccount = await clientapp.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
 
             await clientapp.RemoveAsync(userAccount);
-            userTokenCache.Clear();
         }
     }
 }

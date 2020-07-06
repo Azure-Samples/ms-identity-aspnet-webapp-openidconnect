@@ -48,13 +48,13 @@ namespace WebApp.Controllers
             // Before we render the send email screen, we use the incremental consent to obtain and cache the access token with the correct scopes
             IConfidentialClientApplication app = MsalAppBuilder.BuildConfidentialClientApplication();
             AuthenticationResult result = null;
-            var accounts = await app.GetAccountsAsync();
+            var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
             string[] scopes = { "Mail.Send" };
 
             try
             {
 				// try to get an already cached token
-				result = await app.AcquireTokenSilent(scopes, accounts.FirstOrDefault()).ExecuteAsync().ConfigureAwait(false);
+				result = await app.AcquireTokenSilent(scopes, account).ExecuteAsync().ConfigureAwait(false);
             }
             catch (MsalUiRequiredException ex)
             {
@@ -108,7 +108,7 @@ namespace WebApp.Controllers
             string message = String.Format(messagetemplate, subject, body, recipient);
 
             HttpClient client = new HttpClient();
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, "https://graph.microsoft.com/v1.0/me/microsoft.graph.sendMail")
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, "https://graph.microsoft.com/v1.0/me/sendMail")
             {
                 Content = new StringContent(message, Encoding.UTF8, "application/json")
             };
@@ -116,13 +116,13 @@ namespace WebApp.Controllers
 
             IConfidentialClientApplication app = MsalAppBuilder.BuildConfidentialClientApplication();
             AuthenticationResult result = null;
-            var accounts = await app.GetAccountsAsync();
+            var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
             string[] scopes = { "Mail.Send" };
 
             try
             {
 				// try to get an already cached token
-				result = await app.AcquireTokenSilent(scopes, accounts.FirstOrDefault()).ExecuteAsync().ConfigureAwait(false);
+				result = await app.AcquireTokenSilent(scopes, account).ExecuteAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -158,13 +158,13 @@ namespace WebApp.Controllers
         {
             IConfidentialClientApplication app = MsalAppBuilder.BuildConfidentialClientApplication();
             AuthenticationResult result = null;
-            var accounts = await app.GetAccountsAsync();
+            var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
             string[] scopes = { "Mail.Read" };
 
             try
             {
                 // try to get token silently
-                result = await app.AcquireTokenSilent(scopes, accounts.FirstOrDefault()).ExecuteAsync().ConfigureAwait(false);
+                result = await app.AcquireTokenSilent(scopes, account).ExecuteAsync().ConfigureAwait(false);
             }
             catch (MsalUiRequiredException)
             {
