@@ -36,11 +36,6 @@ namespace WebApp.Utils
     public class MSALAppMemoryTokenCache
     {
         /// <summary>
-        /// The application cache key
-        /// </summary>
-        internal readonly string AppCacheId;
-
-        /// <summary>
         /// The backing MemoryCache instance
         /// </summary>
         internal readonly MemoryCache memoryCache = MemoryCache.Default;
@@ -55,11 +50,8 @@ namespace WebApp.Utils
         /// Initializes a new instance of the <see cref="MSALAppMemoryTokenCache"/> class.
         /// </summary>
         /// <param name="tokenCache">The client's instance of the token cache.</param>
-        /// <param name="clientId">The application's id (Client ID).</param>
-        public MSALAppMemoryTokenCache(ITokenCache tokenCache, string clientId)
+        public MSALAppMemoryTokenCache(ITokenCache tokenCache)
         {
-            AppCacheId = clientId + "_AppTokenCache";
-
             tokenCache.SetBeforeAccess(AppTokenCacheBeforeAccessNotification);
             tokenCache.SetAfterAccess(AppTokenCacheAfterAccessNotification);
             tokenCache.SetBeforeWrite(AppTokenCacheBeforeWriteNotification);
@@ -74,11 +66,6 @@ namespace WebApp.Utils
             // Since we are using a MemoryCache ,whose methods are threads safe, we need not to do anything in this handler.
         }
 
-        public void Clear()
-        {
-            memoryCache.Remove(AppCacheId);
-        }
-
         /// <summary>
         /// Triggered right before MSAL needs to access the cache. Reload the cache from the persistence store in case it changed since the last access.
         /// </summary>
@@ -86,7 +73,7 @@ namespace WebApp.Utils
         private void AppTokenCacheBeforeAccessNotification(TokenCacheNotificationArgs args)
         {
             // Load the token cache from memory
-            byte[] tokenCacheBytes = (byte[])this.memoryCache.Get(AppCacheId);
+            byte[] tokenCacheBytes = (byte[])this.memoryCache.Get(args.SuggestedCacheKey);
             args.TokenCache.DeserializeMsalV3(tokenCacheBytes, shouldClearExistingCache: true);
         }
 
@@ -99,9 +86,16 @@ namespace WebApp.Utils
             // if the access operation resulted in a cache update
             if (args.HasStateChanged)
             {
-                // Reflect changes in the persistence store
-                this.memoryCache.Set(AppCacheId, args.TokenCache.SerializeMsalV3(), cacheDuration);
-
+                if (args.HasTokens)
+                {
+                    // No tokens => remove the entry in the cache
+                    this.memoryCache.Remove(args.SuggestedCacheKey);
+                }
+                else
+                {
+                    // Reflect changes in the persistence store
+                    this.memoryCache.Set(args.SuggestedCacheKey, args.TokenCache.SerializeMsalV3(), cacheDuration);
+                }
             }
         }
     }

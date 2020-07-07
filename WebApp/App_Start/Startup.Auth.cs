@@ -66,7 +66,7 @@ namespace WebApp
         private async Task OnAuthorizationCodeReceived(AuthorizationCodeReceivedNotification context)
         {
             // Upon successful sign in, get the access token & cache it using MSAL
-            IConfidentialClientApplication clientApp = MsalAppBuilder.BuildConfidentialClientApplication(new ClaimsPrincipal(context.AuthenticationTicket.Identity));
+            IConfidentialClientApplication clientApp = MsalAppBuilder.BuildConfidentialClientApplication();
             AuthenticationResult result = await clientApp.AcquireTokenByAuthorizationCode(new[] { "Mail.Read" }, context.Code).ExecuteAsync();
         }
 
