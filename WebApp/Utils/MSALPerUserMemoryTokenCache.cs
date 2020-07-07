@@ -66,14 +66,6 @@ namespace WebApp.Utils
         }
 
         /// <summary>
-        /// Clears the TokenCache's copy of this user's cache.
-        /// </summary>
-        public void Clear(string key)
-        {
-            memoryCache.Remove(key);
-        }
-
-        /// <summary>
         /// Triggered right after MSAL accessed the cache.
         /// </summary>
         /// <param name="args">Contains parameters used by the MSAL call accessing the cache.</param>
@@ -82,20 +74,18 @@ namespace WebApp.Utils
             // if the access operation resulted in a cache update
             if (args.HasStateChanged)
             {
-                string cacheKey = args.SuggestedCacheKey ?? args.Account?.HomeAccountId?.Identifier;
-
+                string cacheKey = args.SuggestedCacheKey;
                 if (args.HasTokens)
                 {
-
                     if (string.IsNullOrWhiteSpace(cacheKey))
                         return;
 
                     // Ideally, methods that load and persist should be thread safe.MemoryCache.Get() is thread safe.
-                    this.memoryCache.Set(cacheKey, args.TokenCache.SerializeMsalV3(), cacheDuration);
+                    memoryCache.Set(cacheKey, args.TokenCache.SerializeMsalV3(), cacheDuration);
                 }
                 else
                 {
-                    this.memoryCache.Remove(cacheKey);
+                    memoryCache.Remove(cacheKey);
                 }
             }
         }
@@ -106,13 +96,13 @@ namespace WebApp.Utils
         /// <param name="args">Contains parameters used by the MSAL call accessing the cache.</param>
         private void UserTokenCacheBeforeAccessNotification(TokenCacheNotificationArgs args)
         {
-            string cacheKey = args.SuggestedCacheKey ?? args.Account?.HomeAccountId?.Identifier;
+            string cacheKey = args.SuggestedCacheKey;
             if (string.IsNullOrEmpty(cacheKey))
             {
                 return;
             }
 
-            byte[] tokenCacheBytes = (byte[])this.memoryCache.Get(cacheKey);
+            byte[] tokenCacheBytes = (byte[])memoryCache.Get(cacheKey);
             args.TokenCache.DeserializeMsalV3(tokenCacheBytes, shouldClearExistingCache: true);
         }
 

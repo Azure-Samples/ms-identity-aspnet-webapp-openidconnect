@@ -55,8 +55,10 @@ namespace WebApp.Utils
             // We only clear the user's tokens.
             MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache);
             var userAccount = await clientapp.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
-
-            await clientapp.RemoveAsync(userAccount);
+            if (userAccount != null)
+            {
+                await clientapp.RemoveAsync(userAccount);
+            }
         }
     }
 }
