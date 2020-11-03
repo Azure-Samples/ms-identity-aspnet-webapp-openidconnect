@@ -1,10 +1,9 @@
 ﻿using Microsoft.Identity.Client;
+using Microsoft.Identity.Web;
 using Microsoft.Owin.Security;
 using Microsoft.Owin.Security.OpenIdConnect;
 using System;
-using System.Configuration;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
@@ -46,7 +45,7 @@ namespace WebApp.Controllers
         public async Task<ActionResult> SendMail()
         {
             // Before we render the send email screen, we use the incremental consent to obtain and cache the access token with the correct scopes
-            IConfidentialClientApplication app = MsalAppBuilder.BuildConfidentialClientApplication();
+            IConfidentialClientApplication app = await MsalAppBuilder.BuildConfidentialClientApplication();
             AuthenticationResult result = null;
             var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
             string[] scopes = { "Mail.Send" };
@@ -114,7 +113,7 @@ namespace WebApp.Controllers
             };
 
 
-            IConfidentialClientApplication app = MsalAppBuilder.BuildConfidentialClientApplication();
+            IConfidentialClientApplication app = await MsalAppBuilder.BuildConfidentialClientApplication();
             AuthenticationResult result = null;
             var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
             string[] scopes = { "Mail.Send" };
@@ -156,7 +155,7 @@ namespace WebApp.Controllers
 
         public async Task<ActionResult> ReadMail()
         {
-            IConfidentialClientApplication app = MsalAppBuilder.BuildConfidentialClientApplication();
+            IConfidentialClientApplication app = await MsalAppBuilder.BuildConfidentialClientApplication();
             AuthenticationResult result = null;
             var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
             string[] scopes = { "Mail.Read" };
