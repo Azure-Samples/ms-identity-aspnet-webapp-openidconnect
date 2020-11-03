@@ -47,7 +47,7 @@ namespace WebApp.Controllers
             // Before we render the send email screen, we use the incremental consent to obtain and cache the access token with the correct scopes
             IConfidentialClientApplication app = await MsalAppBuilder.BuildConfidentialClientApplication();
             AuthenticationResult result = null;
-            var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
+            var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetAccountId());
             string[] scopes = { "Mail.Send" };
 
             try
@@ -115,7 +115,7 @@ namespace WebApp.Controllers
 
             IConfidentialClientApplication app = await MsalAppBuilder.BuildConfidentialClientApplication();
             AuthenticationResult result = null;
-            var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
+            var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetAccountId());
             string[] scopes = { "Mail.Send" };
 
             try
@@ -157,7 +157,7 @@ namespace WebApp.Controllers
         {
             IConfidentialClientApplication app = await MsalAppBuilder.BuildConfidentialClientApplication();
             AuthenticationResult result = null;
-            var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
+            var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetAccountId());
             string[] scopes = { "Mail.Read" };
 
             try

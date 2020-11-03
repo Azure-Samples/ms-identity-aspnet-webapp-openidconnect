@@ -36,6 +36,13 @@ namespace WebApp.Utils
 {
     public static class MsalAppBuilder
     {
+        public static string GetAccountId(this ClaimsPrincipal claimsPrincipal)
+        {
+            string oid = claimsPrincipal.GetObjectId();
+            string tid = claimsPrincipal.GetTenantId();
+            return $"{oid}.{tid}";
+        }
+
         public static async Task<IConfidentialClientApplication> BuildConfidentialClientApplication()
         {
             IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(AuthenticationConfig.ClientId)
@@ -61,7 +68,7 @@ namespace WebApp.Utils
             // We only clear the user's tokens.
             IMsalTokenCacheProvider memoryTokenCacheProvider = CreateTokenCacheSerializer();
             await memoryTokenCacheProvider.InitializeAsync(clientapp.UserTokenCache);
-            var userAccount = await clientapp.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
+            var userAccount = await clientapp.GetAccountAsync(ClaimsPrincipal.Current.GetAccountId());
             if (userAccount != null)
             {
                 await clientapp.RemoveAsync(userAccount);
