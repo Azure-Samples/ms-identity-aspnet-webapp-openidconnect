@@ -22,7 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ***********************************************************************************************/
 
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using Microsoft.Identity.Client;
+using Microsoft.Identity.Web;
+using Microsoft.Identity.Web.TokenCacheProviders;
+using Microsoft.Identity.Web.TokenCacheProviders.InMemory;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -31,7 +36,14 @@ namespace WebApp.Utils
 {
     public static class MsalAppBuilder
     {
-        public static IConfidentialClientApplication BuildConfidentialClientApplication()
+        public static string GetAccountId(this ClaimsPrincipal claimsPrincipal)
+        {
+            string oid = claimsPrincipal.GetObjectId();
+            string tid = claimsPrincipal.GetTenantId();
+            return $"{oid}.{tid}";
+        }
+
+        public static async Task<IConfidentialClientApplication> BuildConfidentialClientApplication()
         {
             IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(AuthenticationConfig.ClientId)
                   .WithClientSecret(AuthenticationConfig.ClientSecret)
@@ -40,11 +52,12 @@ namespace WebApp.Utils
                   .Build();
 
             // After the ConfidentialClientApplication is created, we overwrite its default UserTokenCache serialization with our implementation
-            MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache);
+            IMsalTokenCacheProvider memoryTokenCacheProvider = CreateTokenCacheSerializer();
+            await memoryTokenCacheProvider.InitializeAsync(clientapp.UserTokenCache);
             return clientapp;
         }
 
-        public static async Task ClearUserTokenCache()
+        public static async Task RemoveAccount()
         {
             IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(AuthenticationConfig.ClientId)
                   .WithClientSecret(AuthenticationConfig.ClientSecret)
@@ -53,12 +66,40 @@ namespace WebApp.Utils
                   .Build();
 
             // We only clear the user's tokens.
-            MSALPerUserMemoryTokenCache userTokenCache = new MSALPerUserMemoryTokenCache(clientapp.UserTokenCache);
-            var userAccount = await clientapp.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
+            IMsalTokenCacheProvider memoryTokenCacheProvider = CreateTokenCacheSerializer();
+            await memoryTokenCacheProvider.InitializeAsync(clientapp.UserTokenCache);
+            var userAccount = await clientapp.GetAccountAsync(ClaimsPrincipal.Current.GetAccountId());
             if (userAccount != null)
             {
                 await clientapp.RemoveAsync(userAccount);
             }
         }
+
+
+        /// <summary>
+        /// Implementation based on a Memory cache, But could be Redis, SQL, ...
+        /// </summary>
+        /// <returns></returns>
+        private static IMemoryCache GetMemoryCache()
+        {
+            if (memoryCache == null)
+            {
+                IOptions<MemoryCacheOptions> options = Options.Create(new MemoryCacheOptions());
+                memoryCache = new MemoryCache(options);
+            }
+            return memoryCache;
+        }
+
+        private static IMemoryCache memoryCache;
+
+        private static IMsalTokenCacheProvider CreateTokenCacheSerializer()
+        {
+            IOptions<MsalMemoryTokenCacheOptions> msalCacheOptions = Options.Create(new MsalMemoryTokenCacheOptions());
+            // You can override the options if you wish
+
+            MsalMemoryTokenCacheProvider memoryTokenCacheProvider = new MsalMemoryTokenCacheProvider(GetMemoryCache(), msalCacheOptions);
+            return memoryTokenCacheProvider;
+        }
+
     }
 }

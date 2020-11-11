@@ -7,6 +7,7 @@ using Microsoft.Owin.Security.Cookies;
 using Microsoft.Owin.Security.Notifications;
 using Microsoft.Owin.Security.OpenIdConnect;
 using Owin;
+using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using WebApp.Utils;
@@ -56,6 +57,7 @@ namespace WebApp
                     {
                         AuthorizationCodeReceived = OnAuthorizationCodeReceived,
                         AuthenticationFailed = OnAuthenticationFailed,
+                        RedirectToIdentityProvider = OnRedirectToIdentityProvider,
                     },
                     // Handling SameSite cookie according to https://docs.microsoft.com/en-us/aspnet/samesite/owin-samesite
                     CookieManager = new SameSiteCookieManager(
@@ -63,10 +65,16 @@ namespace WebApp
                 });
         }
 
+        private  Task OnRedirectToIdentityProvider(RedirectToIdentityProviderNotification<OpenIdConnectMessage, OpenIdConnectAuthenticationOptions> arg)
+        {
+            arg.ProtocolMessage.SetParameter("myNewParameter", "its Value");
+            return Task.CompletedTask;
+        }
+
         private async Task OnAuthorizationCodeReceived(AuthorizationCodeReceivedNotification context)
         {
             // Upon successful sign in, get the access token & cache it using MSAL
-            IConfidentialClientApplication clientApp = MsalAppBuilder.BuildConfidentialClientApplication();
+            IConfidentialClientApplication clientApp = await MsalAppBuilder.BuildConfidentialClientApplication();
             AuthenticationResult result = await clientApp.AcquireTokenByAuthorizationCode(new[] { "Mail.Read" }, context.Code).ExecuteAsync();
         }
 
