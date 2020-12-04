@@ -5,9 +5,18 @@ author: jmprieur
 level: 400
 client: ASP.NET Web App
 service: Microsoft Graph
-endpoint: AAD V2
+endpoint: Microsoft identity platform
+page_type: sample
+languages:
+  - csharp  
+products:
+  - azure
+  - azure-active-directory  
+  - dotnet
+  - office-ms-graph
+description: "This sample showcases how to develop a ASP.NET MVC web application that handles sign using the Microsoft identity platform and ASP.NET OpenId Connect OWIN middleware."
 ---
-# Use OpenID Connect to sign in users to Microsoft identity platform (formerly Azure Active Directory for developers) and execute Microsoft Graph operations using incremental consent
+# Use OpenID Connect to sign in users to Microsoft identity platform and execute Microsoft Graph operations using incremental consent
 
 
 ![Build Badge](https://identitydivision.visualstudio.com/_apis/public/build/definitions/a7934fdd-dcde-4492-a406-7fad6ac00e17/514/badge)
@@ -16,7 +25,7 @@ endpoint: AAD V2
 
 ### Overview
 
-This sample showcases how to develop a web application that handles sign using the Microsoft identity platform (formerly Azure Active Directory for developers). It shows you how to use the new unified signing-in model that can be used to sign-in users to the app with both their [work/school account  (Azure AD account) or Microsoft account (MSA)](https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison). The application is implemented as an ASP.NET MVC project, while the web sign-on functionality is implemented via ASP.NET OpenId Connect OWIN middleware.
+This sample showcases how to develop a web application that handles sign using the Microsoft identity platform. It shows you how to use the new unified signing-in model that can be used to sign-in users to the app with both their [work/school account  (Azure AD account) or Microsoft account (MSA)](https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison). The application is implemented as an ASP.NET MVC project, while the web sign-on functionality is implemented via ASP.NET OpenId Connect OWIN middleware.
 
 The sample also shows how to use [MSAL.NET (Microsoft Authentication Library)](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet) to obtain an access token for [Microsoft Graph](https://graph.microsoft.com). Specifically, the sample shows how to retrieve the last email messages received by the signed in user, and how to send a mail message as the user using Microsoft Graph.
 
