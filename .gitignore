@@ -194,3 +194,5 @@ FakesAssemblies/
 
 # Visual Studio 6 workspace options file
 *.opt
+/AppCreationScripts/createdApps.html
+/MigrationBackup/6c7574d5/MailApp
