@@ -22,8 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ***********************************************************************************************/
 
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Identity.Client;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.TokenCacheProviders;
@@ -76,29 +75,17 @@ namespace WebApp.Utils
         }
 
 
-        /// <summary>
-        /// Implementation based on a Memory cache, But could be Redis, SQL, ...
-        /// </summary>
-        /// <returns></returns>
-        private static IMemoryCache GetMemoryCache()
-        {
-            if (memoryCache == null)
-            {
-                IOptions<MemoryCacheOptions> options = Options.Create(new MemoryCacheOptions());
-                memoryCache = new MemoryCache(options);
-            }
-            return memoryCache;
-        }
-
-        private static IMemoryCache memoryCache;
-
         private static IMsalTokenCacheProvider CreateTokenCacheSerializer()
         {
-            IOptions<MsalMemoryTokenCacheOptions> msalCacheOptions = Options.Create(new MsalMemoryTokenCacheOptions());
-            // You can override the options if you wish
+            IServiceCollection services = new ServiceCollection();
 
-            MsalMemoryTokenCacheProvider memoryTokenCacheProvider = new MsalMemoryTokenCacheProvider(GetMemoryCache(), msalCacheOptions);
-            return memoryTokenCacheProvider;
+            // In memory token cache. Other forms of serialization are possible.
+            // See https://github.com/AzureAD/microsoft-identity-web/wiki/asp-net 
+            services.AddInMemoryTokenCaches();
+
+            IServiceProvider serviceProvider = services.BuildServiceProvider();
+            IMsalTokenCacheProvider msalTokenCacheProvider = serviceProvider.GetRequiredService<IMsalTokenCacheProvider>();
+            return msalTokenCacheProvider;
         }
 
     }
