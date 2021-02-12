@@ -46,14 +46,13 @@ namespace WebApp.Controllers
         {
             // Before we render the send email screen, we use the incremental consent to obtain and cache the access token with the correct scopes
             IConfidentialClientApplication app = await MsalAppBuilder.BuildConfidentialClientApplication();
-            AuthenticationResult result = null;
             var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetAccountId());
             string[] scopes = { "Mail.Send" };
 
             try
             {
 				// try to get an already cached token
-				result = await app.AcquireTokenSilent(scopes, account).ExecuteAsync().ConfigureAwait(false);
+				await app.AcquireTokenSilent(scopes, account).ExecuteAsync().ConfigureAwait(false);
             }
             catch (MsalUiRequiredException ex)
             {
@@ -64,7 +63,7 @@ namespace WebApp.Controllers
                 try
                 {
                     // Build the auth code request Uri
-                    string authReqUrl = await OAuth2RequestManager.GenerateAuthorizationRequestUrl(scopes, app, this.HttpContext, Url);
+                    string authReqUrl = await OAuth2RequestManager.GenerateAuthorizationRequestUrl(scopes, app, HttpContext, Url);
                     ViewBag.AuthorizationRequest = authReqUrl;
                     ViewBag.Relogin = "true";
                 }
@@ -104,14 +103,13 @@ namespace WebApp.Controllers
   ""SaveToSentItems"": ""false""
 }}
 ";
-            string message = String.Format(messagetemplate, subject, body, recipient);
+            string message = string.Format(messagetemplate, subject, body, recipient);
 
             HttpClient client = new HttpClient();
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, "https://graph.microsoft.com/v1.0/me/sendMail")
             {
                 Content = new StringContent(message, Encoding.UTF8, "application/json")
             };
-
 
             IConfidentialClientApplication app = await MsalAppBuilder.BuildConfidentialClientApplication();
             AuthenticationResult result = null;
