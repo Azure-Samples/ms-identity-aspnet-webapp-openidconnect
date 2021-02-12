@@ -75,15 +75,19 @@ namespace WebApp.Utils
         }
 
 
+        private static IServiceProvider serviceProvider;
+
         private static IMsalTokenCacheProvider CreateTokenCacheSerializer()
         {
-            IServiceCollection services = new ServiceCollection();
+            if (serviceProvider == null)
+            {
+                // In memory token cache. Other forms of serialization are possible.
+                // See https://github.com/AzureAD/microsoft-identity-web/wiki/asp-net 
+                IServiceCollection services = new ServiceCollection();
+                services.AddInMemoryTokenCaches();
 
-            // In memory token cache. Other forms of serialization are possible.
-            // See https://github.com/AzureAD/microsoft-identity-web/wiki/asp-net 
-            services.AddInMemoryTokenCaches();
-
-            IServiceProvider serviceProvider = services.BuildServiceProvider();
+                serviceProvider = services.BuildServiceProvider();
+            }
             IMsalTokenCacheProvider msalTokenCacheProvider = serviceProvider.GetRequiredService<IMsalTokenCacheProvider>();
             return msalTokenCacheProvider;
         }
