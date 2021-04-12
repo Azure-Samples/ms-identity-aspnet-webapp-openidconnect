@@ -73,7 +73,7 @@ namespace WebApp.Utils
                 {
                     //if valid, redeem code
 
-                    IConfidentialClientApplication cc = await MsalAppBuilder.BuildConfidentialClientApplication();
+                    IConfidentialClientApplication cc = MsalAppBuilder.BuildConfidentialClientApplication();
                     AuthenticationResult result = await cc.AcquireTokenByAuthorizationCode(crd.Scopes, code).ExecuteAsync().ConfigureAwait(false);
 
                     //redirect to original requestor

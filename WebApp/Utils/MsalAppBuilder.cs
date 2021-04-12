@@ -42,7 +42,7 @@ namespace WebApp.Utils
             return $"{oid}.{tid}";
         }
 
-        public static async Task<IConfidentialClientApplication> BuildConfidentialClientApplication()
+        public static IConfidentialClientApplication BuildConfidentialClientApplication()
         {
             IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(AuthenticationConfig.ClientId)
                   .WithClientSecret(AuthenticationConfig.ClientSecret)
@@ -52,7 +52,7 @@ namespace WebApp.Utils
 
             // After the ConfidentialClientApplication is created, we overwrite its default UserTokenCache serialization with our implementation
             IMsalTokenCacheProvider memoryTokenCacheProvider = CreateTokenCacheSerializer();
-            await memoryTokenCacheProvider.InitializeAsync(clientapp.UserTokenCache);
+            memoryTokenCacheProvider.Initialize(clientapp.UserTokenCache);
             return clientapp;
         }
 
@@ -66,7 +66,7 @@ namespace WebApp.Utils
 
             // We only clear the user's tokens.
             IMsalTokenCacheProvider memoryTokenCacheProvider = CreateTokenCacheSerializer();
-            await memoryTokenCacheProvider.InitializeAsync(clientapp.UserTokenCache);
+            memoryTokenCacheProvider.Initialize(clientapp.UserTokenCache);
             var userAccount = await clientapp.GetAccountAsync(ClaimsPrincipal.Current.GetAccountId());
             if (userAccount != null)
             {
