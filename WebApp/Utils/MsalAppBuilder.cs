@@ -57,11 +57,18 @@ namespace WebApp.Utils
                 // After the ConfidentialClientApplication is created, we overwrite its default UserTokenCache serialization with our implementation
                 clientapp.AddInMemoryTokenCache();
 
-                // Could also use other forms of cache
+/*
+                // Could also use other forms of cache, like Redis
+                // See https://aka.ms/ms-id-web/token-cache-serialization
                 clientapp.AddDistributedTokenCache(services =>
                 {
-                    services.AddDistributedMemoryCache();
+                    services.AddStackExchangeRedisCache(options =>
+                    {
+                        options.Configuration = "localhost";
+                        options.InstanceName = "SampleInstance";
+                    });
                 });
+*/
             }
             return clientapp;
         }
