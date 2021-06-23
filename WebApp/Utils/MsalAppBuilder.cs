@@ -42,55 +42,46 @@ namespace WebApp.Utils
             return $"{oid}.{tid}";
         }
 
+        private static IConfidentialClientApplication clientapp;
+
         public static IConfidentialClientApplication BuildConfidentialClientApplication()
         {
-            IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(AuthenticationConfig.ClientId)
-                  .WithClientSecret(AuthenticationConfig.ClientSecret)
-                  .WithRedirectUri(AuthenticationConfig.RedirectUri)
-                  .WithAuthority(new Uri(AuthenticationConfig.Authority))
-                  .Build();
+            if (clientapp == null)
+            {
+                clientapp = ConfidentialClientApplicationBuilder.Create(AuthenticationConfig.ClientId)
+                      .WithClientSecret(AuthenticationConfig.ClientSecret)
+                      .WithRedirectUri(AuthenticationConfig.RedirectUri)
+                      .WithAuthority(new Uri(AuthenticationConfig.Authority))
+                      .Build();
 
-            // After the ConfidentialClientApplication is created, we overwrite its default UserTokenCache serialization with our implementation
-            IMsalTokenCacheProvider memoryTokenCacheProvider = CreateTokenCacheSerializer();
-            memoryTokenCacheProvider.Initialize(clientapp.UserTokenCache);
+                // After the ConfidentialClientApplication is created, we overwrite its default UserTokenCache serialization with our implementation
+                clientapp.AddInMemoryTokenCache();
+
+/*
+                // Could also use other forms of cache, like Redis
+                // See https://aka.ms/ms-id-web/token-cache-serialization
+                clientapp.AddDistributedTokenCache(services =>
+                {
+                    services.AddStackExchangeRedisCache(options =>
+                    {
+                        options.Configuration = "localhost";
+                        options.InstanceName = "SampleInstance";
+                    });
+                });
+*/
+            }
             return clientapp;
         }
 
         public static async Task RemoveAccount()
         {
-            IConfidentialClientApplication clientapp = ConfidentialClientApplicationBuilder.Create(AuthenticationConfig.ClientId)
-                  .WithClientSecret(AuthenticationConfig.ClientSecret)
-                  .WithRedirectUri(AuthenticationConfig.RedirectUri)
-                  .WithAuthority(new Uri(AuthenticationConfig.Authority))
-                  .Build();
+            BuildConfidentialClientApplication();
 
-            // We only clear the user's tokens.
-            IMsalTokenCacheProvider memoryTokenCacheProvider = CreateTokenCacheSerializer();
-            memoryTokenCacheProvider.Initialize(clientapp.UserTokenCache);
             var userAccount = await clientapp.GetAccountAsync(ClaimsPrincipal.Current.GetAccountId());
             if (userAccount != null)
             {
                 await clientapp.RemoveAsync(userAccount);
             }
         }
-
-
-        private static IServiceProvider serviceProvider;
-
-        private static IMsalTokenCacheProvider CreateTokenCacheSerializer()
-        {
-            if (serviceProvider == null)
-            {
-                // In memory token cache. Other forms of serialization are possible.
-                // See https://github.com/AzureAD/microsoft-identity-web/wiki/asp-net 
-                IServiceCollection services = new ServiceCollection();
-                services.AddInMemoryTokenCaches();
-
-                serviceProvider = services.BuildServiceProvider();
-            }
-            IMsalTokenCacheProvider msalTokenCacheProvider = serviceProvider.GetRequiredService<IMsalTokenCacheProvider>();
-            return msalTokenCacheProvider;
-        }
-
     }
 }
