@@ -25,8 +25,7 @@ SOFTWARE.
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Identity.Client;
 using Microsoft.Identity.Web;
-using Microsoft.Identity.Web.TokenCacheProviders;
-using Microsoft.Identity.Web.TokenCacheProviders.InMemory;
+using Microsoft.Owin.Security.DataProtection;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -55,8 +54,14 @@ namespace WebApp.Utils
                       .Build();
 
                 // After the ConfidentialClientApplication is created, we overwrite its default UserTokenCache serialization with our implementation
-                clientapp.AddInMemoryTokenCache();
+                // clientapp.AddInMemoryTokenCache();
 
+
+                clientapp.AddDistributedTokenCache(services =>
+                {
+                    services.AddDistributedMemoryCache();
+                    services.AddSingleton<IDataProtectionProvider, DpapiDataProtectionProvider>();
+                });
 /*
                 // Could also use other forms of cache, like Redis
                 // See https://aka.ms/ms-id-web/token-cache-serialization
