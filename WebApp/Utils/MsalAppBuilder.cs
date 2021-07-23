@@ -25,7 +25,7 @@ SOFTWARE.
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Identity.Client;
 using Microsoft.Identity.Web;
-using Microsoft.Owin.Security.DataProtection;
+using Microsoft.Identity.Web.TokenCacheProviders.Distributed;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -60,7 +60,10 @@ namespace WebApp.Utils
                 clientapp.AddDistributedTokenCache(services =>
                 {
                     services.AddDistributedMemoryCache();
-                    services.AddSingleton<IDataProtectionProvider, DpapiDataProtectionProvider>();
+                    services.Configure<MsalDistributedTokenCacheAdapterOptions>(o =>
+                    {
+                        o.Encrypt = true;
+                    });
                 });
 /*
                 // Could also use other forms of cache, like Redis
