@@ -158,6 +158,10 @@ namespace WebApp.Controllers
             var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetAccountId());
             string[] scopes = { "Mail.Read" };
 
+            //Get the SPA Auth Code from the Session Variable and add it to the ViewBag
+            var spaAuthCode = HttpContext.Session["Spa_Auth_Code"];
+            ViewBag.SpaAuthCode = (string)spaAuthCode;
+
             try
             {
                 // try to get token silently

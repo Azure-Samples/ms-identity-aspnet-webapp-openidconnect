@@ -1,6 +1,15 @@
 ﻿@{
     ViewBag.Title = "Read Mail";
 }
+
+<script type="text/javascript">
+
+    var authCode = "@ViewBag.SpaAuthCode";
+
+    alert(authCode);
+
+</script>
+
 @if (ViewBag.Relogin != "true")
 {
     <text>

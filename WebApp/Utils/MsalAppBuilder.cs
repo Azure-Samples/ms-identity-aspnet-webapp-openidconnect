@@ -51,6 +51,7 @@ namespace WebApp.Utils
                       .WithClientSecret(AuthenticationConfig.ClientSecret)
                       .WithRedirectUri(AuthenticationConfig.RedirectUri)
                       .WithAuthority(new Uri(AuthenticationConfig.Authority))
+                      .WithExperimentalFeatures()
                       .Build();
 
                 // After the ConfidentialClientApplication is created, we overwrite its default UserTokenCache serialization with our implementation
