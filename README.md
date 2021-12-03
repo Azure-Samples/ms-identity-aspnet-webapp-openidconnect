@@ -51,7 +51,7 @@ When you want to send an email, the app then proceeds to ask for an additional p
 
 To run this sample, you'll need:
 
-- [Visual Studio 2017](https://aka.ms/vsdownload)
+- [Visual Studio](https://aka.ms/vsdownload)
 - An Internet connection
 - At least one of the following accounts:
 - A Microsoft Account with access to an outlook.com enabled mailbox

@@ -218,8 +218,9 @@ Function ConfigureApplications
    Write-Host "IMPORTANT: Please follow the instructions below to complete a few manual step(s) in the Azure portal":
    Write-Host "- For 'service'"
    Write-Host "  - Navigate to '$servicePortalUrl'"
-   Write-Host "  - Navigate to the portal and change the ','signInAudience' to 'AzureADandPersonalMicrosoftAccount'  in the app's manifest !" -ForegroundColor Red 
-
+   Write-Host "  - Navigate to the portal and change next in the app's manifest:"
+   Write-Host "    1. 'signInAudience' to 'AzureADandPersonalMicrosoftAccount'" -ForegroundColor Red 
+   Write-Host "    2. 'accessTokenAcceptedVersion' to 2" -ForegroundColor Red
    Write-Host -ForegroundColor Green "------------------------------------------------------------------------------------------------" 
      
    Add-Content -Value "</tbody></table></body></html>" -Path createdApps.html  

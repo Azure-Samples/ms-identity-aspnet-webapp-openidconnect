@@ -196,3 +196,4 @@ FakesAssemblies/
 *.opt
 /AppCreationScripts/createdApps.html
 /MigrationBackup/6c7574d5/MailApp
+/.vscode/settings.json
