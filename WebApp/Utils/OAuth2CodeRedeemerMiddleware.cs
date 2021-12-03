@@ -29,8 +29,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.Serialization;
 using System.Security.Claims;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
@@ -55,7 +56,7 @@ namespace WebApp.Utils
             this.options = options;
         }
 
-        public async override Task Invoke(IOwinContext context)
+        public override async Task Invoke(IOwinContext context)
         {
             string code = context.Request.Query["code"];
             if (code != null)
@@ -147,12 +148,15 @@ namespace WebApp.Utils
 
                 stateList.Add(scopeslist);
 
-                var formatter = new BinaryFormatter();
-                var stream = new MemoryStream();
-                formatter.Serialize(stream, stateList);
-                var stateBits = stream.ToArray();
-
-                return url.Encode(Convert.ToBase64String(stateBits));
+                using (MemoryStream memoryStream = new MemoryStream())
+                using (StreamReader reader = new StreamReader(memoryStream))
+                {
+                    DataContractSerializer serializer = new DataContractSerializer(stateList.GetType());
+                    serializer.WriteObject(memoryStream, stateList);
+                    memoryStream.Position = 0;
+                    var stateBits = Encoding.ASCII.GetBytes(reader.ReadToEnd());
+                    return url.Encode(Convert.ToBase64String(stateBits));
+                }
             }
             catch
             {
@@ -185,12 +189,21 @@ namespace WebApp.Utils
         {
             try
             {
-                var stateBits = Convert.FromBase64String(HttpUtility.UrlDecode(state));
-                var formatter = new BinaryFormatter();
-                var stream = new MemoryStream(stateBits);
-                List<String> stateList = (List<String>)formatter.Deserialize(stream);
+                // the state is send without urlencoding, so we encode it again to match the byte array
+                var stateBits = Convert.FromBase64String(HttpUtility.UrlEncode(state));
+
+                List<String> stateList = new List<string>();
+                using (Stream stream = new MemoryStream())
+                {
+                    // byte[] data = Encoding.ASCII.GetString(stateBits);
+                    stream.Write(stateBits, 0, stateBits.Length);
+                    stream.Position = 0;
+                    DataContractSerializer deserializer = new DataContractSerializer(stateList.GetType());
+                    stateList = (List<String>)deserializer.ReadObject(stream);
+                }
+
                 var stateGuid = stateList[0];
-                //TODO - cleaning up should not be necessary, I have just one entry per user
+                // TODO - cleaning up should not be necessary, I have just one entry per user
                 // but at least I should do it for making the state single use
                 if (stateGuid == ReadUserStateValue(httpcontext))
                 {

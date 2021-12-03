@@ -30,7 +30,7 @@
       ],
       "ManualSteps": [
         {
-          "Comment" :  "Navigate to the portal and change the ','signInAudience' to 'AzureADandPersonalMicrosoftAccount'  in the app's manifest !"
+          "Comment" :  "Navigate to the portal and change the ','signInAudience' to 'AzureADandPersonalMicrosoftAccount' and 'accessTokenAcceptedVersion' to 2, in the app's manifest !"
         }
       ]
     }
