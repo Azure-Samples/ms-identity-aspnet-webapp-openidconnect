@@ -2,8 +2,12 @@
 param(
     [PSCredential] $Credential,
     [Parameter(Mandatory=$False, HelpMessage='Tenant ID (This is a GUID which represents the "Directory ID" of the AzureAD tenant into which you want to create the apps')]
-    [string] $tenantId
+    [string] $tenantId,
+    [Parameter(Mandatory=$False, HelpMessage='Azure environment to use while running the script (it defaults to AzureCloud)')]
+    [string] $azureEnvironmentName
 )
+
+#Requires -Modules AzureAD -RunAsAdministrator
 
 <#
  This script creates the Azure AD applications needed for this sample and updates the configuration files
@@ -31,9 +35,9 @@ Function ComputePassword
 
 # Create an application key
 # See https://www.sabin.io/blog/adding-an-azure-active-directory-application-and-key-using-powershell/
-Function CreateAppKey([DateTime] $fromDate, [double] $durationInYears, [string]$pw)
+Function CreateAppKey([DateTime] $fromDate, [double] $durationInMonths, [string]$pw)
 {
-    $endDate = $fromDate.AddYears($durationInYears) 
+    $endDate = $fromDate.AddMonths($durationInMonths);
     $keyId = (New-Guid).ToString();
     $key = New-Object Microsoft.Open.AzureAD.Model.PasswordCredential
     $key.StartDate = $fromDate
@@ -65,7 +69,7 @@ Function AddResourcePermission($requiredAccess, `
 }
 
 #
-# Exemple: GetRequiredPermissions "Microsoft Graph"  "Graph.Read|User.Read"
+# Example: GetRequiredPermissions "Microsoft Graph"  "Graph.Read|User.Read"
 # See also: http://stackoverflow.com/questions/42164581/how-to-configure-a-new-azure-ad-application-through-powershell
 Function GetRequiredPermissions([string] $applicationDisplayName, [string] $requiredDelegatedPermissions, [string]$requiredApplicationPermissions, $servicePrincipal)
 {
@@ -119,6 +123,8 @@ Function ReplaceSetting([string] $configFilePath, [string] $key, [string] $newVa
 Set-Content -Value "<html><body><table>" -Path createdApps.html
 Add-Content -Value "<thead><tr><th>Application</th><th>AppId</th><th>Url in the Azure portal</th></tr></thead><tbody>" -Path createdApps.html
 
+$ErrorActionPreference = "Stop"
+
 Function ConfigureApplications
 {
 <#.Description
@@ -126,8 +132,12 @@ Function ConfigureApplications
    configuration files in the client and service project  of the visual studio solution (App.Config and Web.Config)
    so that they are consistent with the Applications parameters
 #> 
-
     $commonendpoint = "common"
+    
+    if (!$azureEnvironmentName)
+    {
+        $azureEnvironmentName = "AzureCloud"
+    }
 
     # $tenantId is the Active Directory Tenant. This is a GUID which represents the "Directory ID" of the AzureAD tenant
     # into which you want to create the apps. Look it up in the Azure portal in the "Properties" of the Azure AD.
@@ -136,17 +146,17 @@ Function ConfigureApplications
     # you'll need to sign-in with creds enabling your to create apps in the tenant)
     if (!$Credential -and $TenantId)
     {
-        $creds = Connect-AzureAD -TenantId $tenantId
+        $creds = Connect-AzureAD -TenantId $tenantId -AzureEnvironmentName $azureEnvironmentName
     }
     else
     {
         if (!$TenantId)
         {
-            $creds = Connect-AzureAD -Credential $Credential
+            $creds = Connect-AzureAD -Credential $Credential -AzureEnvironmentName $azureEnvironmentName
         }
         else
         {
-            $creds = Connect-AzureAD -TenantId $tenantId -Credential $Credential
+            $creds = Connect-AzureAD -TenantId $tenantId -Credential $Credential -AzureEnvironmentName $azureEnvironmentName
         }
     }
 
@@ -155,28 +165,30 @@ Function ConfigureApplications
         $tenantId = $creds.Tenant.Id
     }
 
+    
+
     $tenant = Get-AzureADTenantDetail
     $tenantName =  ($tenant.VerifiedDomains | Where { $_._Default -eq $True }).Name
 
-    # Get the user running the script
+    # Get the user running the script to add the user as the app owner
     $user = Get-AzureADUser -ObjectId $creds.Account.Id
 
    # Create the service AAD application
    Write-Host "Creating the AAD application (MailApp-openidconnect-v2)"
-   # Get a 2 years application key for the service Application
+   # Get a 6 months application key for the service Application
    $pw = ComputePassword
    $fromDate = [DateTime]::Now;
-   $key = CreateAppKey -fromDate $fromDate -durationInYears 2 -pw $pw
+   $key = CreateAppKey -fromDate $fromDate -durationInMonths 6 -pw $pw
    $serviceAppKey = $pw
+   # create the application 
    $serviceAadApplication = New-AzureADApplication -DisplayName "MailApp-openidconnect-v2" `
                                                    -HomePage "https://localhost:44326/" `
                                                    -ReplyUrls "https://localhost:44326/" `
-                                                   -IdentifierUris "https://$tenantName/MailApp-openidconnect-v2" `
                                                    -AvailableToOtherTenants $True `
                                                    -PasswordCredentials $key `
-                                                   -Oauth2AllowImplicitFlow $true `
                                                    -PublicClient $False
 
+   # create the service principal of the newly created application 
    $currentAppId = $serviceAadApplication.AppId
    $serviceServicePrincipal = New-AzureADServicePrincipal -AppId $currentAppId -Tags {WindowsAzureActiveDirectoryIntegratedApp}
 
@@ -187,6 +199,7 @@ Function ConfigureApplications
         Add-AzureADApplicationOwner -ObjectId $serviceAadApplication.ObjectId -RefObjectId $user.ObjectId
         Write-Host "'$($user.UserPrincipalName)' added as an application owner to app '$($serviceServicePrincipal.DisplayName)'"
    }
+
 
    Write-Host "Done creating the service application (MailApp-openidconnect-v2)"
 
@@ -211,25 +224,23 @@ Function ConfigureApplications
    # Update config file for 'service'
    $configFile = $pwd.Path + "\..\WebApp\Web.Config"
    Write-Host "Updating the sample code ($configFile)"
-   ReplaceSetting -configFilePath $configFile -key "ida:ClientId" -newValue $serviceAadApplication.AppId
-   ReplaceSetting -configFilePath $configFile -key "ida:ClientSecret" -newValue $serviceAppKey
-   Write-Host ""
-   Write-Host -ForegroundColor Green "------------------------------------------------------------------------------------------------" 
-   Write-Host "IMPORTANT: Please follow the instructions below to complete a few manual step(s) in the Azure portal":
-   Write-Host "- For 'service'"
-   Write-Host "  - Navigate to '$servicePortalUrl'"
-   Write-Host "  - Navigate to the portal and change next in the app's manifest:"
-   Write-Host "    1. 'signInAudience' to 'AzureADandPersonalMicrosoftAccount'" -ForegroundColor Red 
-   Write-Host "    2. 'accessTokenAcceptedVersion' to 2" -ForegroundColor Red
-   Write-Host -ForegroundColor Green "------------------------------------------------------------------------------------------------" 
-     
+   ReplaceSetting -configFilePath $configFile -key "ida:ClientId" -newValue ($serviceAadApplication.AppId)
+   ReplaceSetting -configFilePath $configFile -key "ida:ClientSecret" -newValue ($serviceAppKey)
+   if($isOpenSSL -eq 'Y')
+   {
+        Write-Host -ForegroundColor Green "------------------------------------------------------------------------------------------------" 
+        Write-Host "You have generated certificate using OpenSSL so follow below steps: "
+        Write-Host "Install the certificate on your system from current folder."
+        Write-Host -ForegroundColor Green "------------------------------------------------------------------------------------------------" 
+   }
    Add-Content -Value "</tbody></table></body></html>" -Path createdApps.html  
 }
 
 # Pre-requisites
 if ((Get-Module -ListAvailable -Name "AzureAD") -eq $null) { 
-    Install-Module "AzureAD" -Scope CurrentUser 
-} 
+    Install-Module "AzureAD" -Scope CurrentUser
+}
+
 Import-Module AzureAD
 
 # Run interactively (will ask you for the tenant ID)
