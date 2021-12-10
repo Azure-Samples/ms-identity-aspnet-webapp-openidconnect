@@ -18,22 +18,21 @@ description: "This sample showcases how to develop a ASP.NET MVC web application
 ---
 # Use OpenID Connect to sign in users to Microsoft identity platform and execute Microsoft Graph operations using incremental consent
 
-
 ![Build Badge](https://identitydivision.visualstudio.com/_apis/public/build/definitions/a7934fdd-dcde-4492-a406-7fad6ac00e17/514/badge)
 
 ## About this sample
 
 ### Overview
 
-This sample showcases how to develop a web application that handles sign using the Microsoft identity platform. It shows you how to use the new unified signing-in model that can be used to sign-in users to the app with both their [work/school account  (Azure AD account) or Microsoft account (MSA)](https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison). The application is implemented as an ASP.NET MVC project, while the web sign-on functionality is implemented via ASP.NET OpenId Connect OWIN middleware.
+This sample showcases how to develop a web application that handles sign using the Microsoft identity platform. It shows you how to use the new unified signing-in model that can be used to sign-in users to the app with both their [work/school account  (Azure AD account) or Microsoft account (MSA)](https://docs.microsoft.com/azure/active-directory/develop/azure-ad-endpoint-comparison). The application is implemented as an ASP.NET MVC project, while the web sign-on functionality is implemented via ASP.NET OpenId Connect OWIN middleware.
 
 The sample also shows how to use [MSAL.NET (Microsoft Authentication Library)](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet) to obtain an access token for [Microsoft Graph](https://graph.microsoft.com). Specifically, the sample shows how to retrieve the last email messages received by the signed in user, and how to send a mail message as the user using Microsoft Graph.
 
-Finally, the sample showcases a new capability introduced by the new Microsoft identity platform - the ability for one app to seek consent for new permissions [incrementally](https://docs.microsoft.com/en-us/azure/active-directory/develop/azure-ad-endpoint-comparison#incremental-and-dynamic-consent).
+Finally, the sample showcases a new capability introduced by the new Microsoft identity platform - the ability for one app to seek consent for new permissions [incrementally](https://docs.microsoft.com/azure/active-directory/develop/azure-ad-endpoint-comparison#incremental-and-dynamic-consent).
 
 For more information about how the protocols work in this scenario and other scenarios, see [Authentication Scenarios for Azure AD](http://go.microsoft.com/fwlink/?LinkId=394414).
 
-For more information about Microsoft Graph, please visit the [Microsoft Graph homepage](https://graph.microsoft.io/en-us/).
+For more information about Microsoft Graph, please visit the [Microsoft Graph homepage](https://graph.microsoft.io/).
 
 ## Topology
 
@@ -43,9 +42,9 @@ For more information about Microsoft Graph, please visit the [Microsoft Graph ho
 
 ### Scenario
 
-You sign in using your personal Microsoft Account in the app. During this flow, the app asks for consent to read your email only. Then, using this app, you can get the contents of your email's inbox using [Microsoft Graph Api](https://developer.microsoft.com/en-us/graph/docs/api-reference/v1.0/api/user_list_messages).
+You sign in using your personal Microsoft Account in the app. During this flow, the app asks for consent to read your email only. Then, using this app, you can get the contents of your email's inbox using [Microsoft Graph Api](https://developer.microsoft.com/graph/docs/api-reference/v1.0/api/user_list_messages).
 
-When you want to send an email, the app then proceeds to ask for an additional permission to send emails on your behalf. Once you provide that, it presents you with a screen using which you can send emails. The emails are sent using [Microsoft Graph API](https://developer.microsoft.com/en-us/graph/docs/api-reference/v1.0/api/message_send).
+When you want to send an email, the app then proceeds to ask for an additional permission to send emails on your behalf. Once you provide that, it presents you with a screen using which you can send emails. The emails are sent using [Microsoft Graph API](https://developer.microsoft.com/graph/docs/api-reference/v1.0/api/message_send).
 
 ## How To Run This Sample
 
@@ -57,8 +56,8 @@ To run this sample, you'll need:
 - A Microsoft Account with access to an outlook.com enabled mailbox
 - An Azure AD account with access to an Office 365 mailbox
 
-You can get a Microsoft Account and outlook.com mailbox for free by choosing the Sign-up option while visiting [https://www.microsoft.com/en-us/outlook-com/](https://www.microsoft.com/en-us/outlook-com/).
-You can get an Office365 office subscription, which will give you both an Azure AD account and a mailbox, at [https://products.office.com/en-us/try](https://products.office.com/en-us/try).
+You can get a Microsoft Account and outlook.com mailbox for free by choosing the Sign-up option while visiting [https://www.microsoft.com/outlook-com/](https://www.microsoft.com/outlook-com/).
+You can get an Office365 office subscription, which will give you both an Azure AD account and a mailbox, at [https://products.office.com/try](https://products.office.com/try).
 
 ### Step 1:  Clone or download this repository
 
@@ -130,7 +129,7 @@ As a first step you'll need to:
 1. On the app **Overview** page, find the **Application (client) ID** value and record it for later. You'll need it to configure the Visual Studio configuration file for this project.
 1. From the app's Overview page, select the **Authentication** section.
    - In the **Advanced settings** | **Implicit grant** section, check **ID tokens** as this sample requires
-     the [Implicit grant flow](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-implicit-grant-flow) to be enabled to
+     the [Implicit grant flow](https://docs.microsoft.com/azure/active-directory/develop/v2-oauth2-implicit-grant-flow) to be enabled to
      sign-in the user, and call an API.
 1. Select **Save**.
 1. From the **Certificates & secrets** page, in the **Client secrets** section, choose **New client secret**:
@@ -251,9 +250,9 @@ Important things to notice:
 
 ### Initial token acquisition
 
-This sample makes use of OpenId Connect hybrid flow, where at authentication time the app receives both sign in info, the  [id_token](https://docs.microsoft.com/en-us/azure/active-directory/develop/id-tokens)  and artifacts (in this case, an  [authorization code](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow)) that the app can use for obtaining an [access token](https://docs.microsoft.com/en-us/azure/active-directory/develop/access-tokens). This access token can be used to access other resources - in this sample, the Microsoft Graph, for the purpose of reading the user's mailbox.
+This sample makes use of OpenId Connect hybrid flow, where at authentication time the app receives both sign in info, the  [id_token](https://docs.microsoft.com/azure/active-directory/develop/id-tokens)  and artifacts (in this case, an  [authorization code](https://docs.microsoft.com/azure/active-directory/develop/v2-oauth2-auth-code-flow)) that the app can use for obtaining an [access token](https://docs.microsoft.com/azure/active-directory/develop/access-tokens). This access token can be used to access other resources - in this sample, the Microsoft Graph, for the purpose of reading the user's mailbox.
 
-This sample shows how to use MSAL to redeem the authorization code into an access token, which is saved in a cache along with any other useful artifact (such as associated  [refresh_tokens](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow#refresh-the-access-token)) so that it can be used later on in the application from the controllers' actions to fetch access tokens after they are expired.
+This sample shows how to use MSAL to redeem the authorization code into an access token, which is saved in a cache along with any other useful artifact (such as associated  [refresh_tokens](https://docs.microsoft.com/azure/active-directory/develop/v2-oauth2-auth-code-flow#refresh-the-access-token)) so that it can be used later on in the application from the controllers' actions to fetch access tokens after they are expired.
 
 The redemption takes place in the `AuthorizationCodeReceived` notification of the authorization middleware. Here there's the relevant code:
 
@@ -270,7 +269,7 @@ Important things to notice:
 
 - The  `IConfidentialClientApplication`  is the primitive that MSAL uses to model the Web application. As such, it is initialized with the main application's coordinates.
 - The scope requested by  `AcquireTokenByAuthorizationCode`  is just the one required for invoking the API targeted by the application as part of its essential features. We'll see later that the app allows for extra scopes, but you can ignore those at this point.
-- The instance of `IConfidentialClientApplication` is created and attached to an instance of `MSALPerUserMemoryTokenCache`, which is a custom cache implementation that uses a shared instance of a [MemoryCache](https://docs.microsoft.com/en-us/dotnet/api/system.runtime.caching.memorycache?view=netframework-4.8) to cache tokens. When it acquires the access token, MSAL also saves this token in its token cache. When any code in the rest of the project tries to acquire an access token for Microsoft Graph with the same scope (Mail.Read), MSAL will return the cached token.
+- The instance of `IConfidentialClientApplication` is created and attached to an instance of `MSALPerUserMemoryTokenCache`, which is a custom cache implementation that uses a shared instance of a [MemoryCache](https://docs.microsoft.com/dotnet/api/system.runtime.caching.memorycache?view=netframework-4.8) to cache tokens. When it acquires the access token, MSAL also saves this token in its token cache. When any code in the rest of the project tries to acquire an access token for Microsoft Graph with the same scope (Mail.Read), MSAL will return the cached token.
 
 The IConfidentialClientApplication is created in a separate function in the `MsalAppBuilder` class.
 
@@ -292,7 +291,7 @@ Important things to notice:
 
 - The method builds an instance of the IConfidentialClientApplication using the new [builder pattern introduced by MSAL v3.X](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Client-Applications).
 
-- `MSALPerUserMemoryTokenCache` is a sample implementation of a custom MSAL token cache, which saves tokens in a [MemoryCache](https://docs.microsoft.com/en-us/dotnet/framework/performance/caching-in-net-framework-applications) instance shared across the web app. In a real-life application, you would likely want to save tokens in a long lived store instead, so that you don't need to retrieve new ones more often than necessary.
+- `MSALPerUserMemoryTokenCache` is a sample implementation of a custom MSAL token cache, which saves tokens in a [MemoryCache](https://docs.microsoft.com/dotnet/framework/performance/caching-in-net-framework-applications) instance shared across the web app. In a real-life application, you would likely want to save tokens in a long lived store instead, so that you don't need to retrieve new ones more often than necessary.
 
 ### Using access tokens in the app, handling token expiration
 
@@ -423,7 +422,7 @@ This project has adopted the [Microsoft Open Source Code of Conduct](https://ope
 
 For more information, visit the following links:
 
-- [Add sign-in with Microsoft to an ASP.NET web app (V2 endpoint)](https://docs.microsoft.com/en-us/azure/active-directory/develop/guidedsetups/active-directory-aspnetwebapp) explains how to re-create the sign-in part of this sample from scratch.
+- [Add sign-in with Microsoft to an ASP.NET web app (V2 endpoint)](https://docs.microsoft.com/azure/active-directory/develop/guidedsetups/active-directory-aspnetwebapp) explains how to re-create the sign-in part of this sample from scratch.
 - To learn more about the code, visit [Conceptual documentation for MSAL.NET](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki#conceptual-documentation) and in particular:
 
   - [Acquiring tokens with authorization codes on web apps](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Acquiring-tokens-with-authorization-codes-on-web-apps)
@@ -432,10 +431,10 @@ For more information, visit the following links:
 
 - Articles about the Azure AD V2 endpoint [http://aka.ms/aaddevv2](http://aka.ms/aaddevv2), with a focus on:
 
-  - [Azure Active Directory v2.0 and OAuth 2.0 On-Behalf-Of flow](https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-v2-protocols-oauth-on-behalf-of)
-  - [Incremental and dynamic consent](https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-v2-compare#incremental-and-dynamic-consent)
+  - [Azure Active Directory v2.0 and OAuth 2.0 On-Behalf-Of flow](https://docs.microsoft.com/azure/active-directory/develop/active-directory-v2-protocols-oauth-on-behalf-of)
+  - [Incremental and dynamic consent](https://docs.microsoft.com/azure/active-directory/develop/active-directory-v2-compare#incremental-and-dynamic-consent)
 
 - Articles about the Microsoft Graph
-  - [Overview of Microsoft Graph](https://developer.microsoft.com/en-us/graph/docs/concepts/overview)
-  - [Get access tokens to call Microsoft Graph](https://developer.microsoft.com/en-us/graph/docs/concepts/auth_overview)
-  - [Use the Microsoft Graph API](https://developer.microsoft.com/en-us/graph/docs/concepts/use_the_api)
+  - [Overview of Microsoft Graph](https://developer.microsoft.com/graph/docs/concepts/overview)
+  - [Get access tokens to call Microsoft Graph](https://developer.microsoft.com/graph/docs/concepts/auth_overview)
+  - [Use the Microsoft Graph API](https://developer.microsoft.com/graph/docs/concepts/use_the_api)
