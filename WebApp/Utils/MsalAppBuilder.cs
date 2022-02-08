@@ -53,13 +53,17 @@ namespace WebApp.Utils
                       .WithAuthority(new Uri(AuthenticationConfig.Authority))
                       .Build();
 
-                // After the ConfidentialClientApplication is created, we overwrite its default UserTokenCache serialization with our implementation
-                // clientapp.AddInMemoryTokenCache();
-
-
                 clientapp.AddDistributedTokenCache(services =>
                 {
+                    // Do not use DistributedMemoryCache in production!
+                    // This is a memory cache which is not distributed and is not persisted.
+                    // It's useful for testing and samples, but in production use a durable distributed cache,
+                    // such as Redis.
                     services.AddDistributedMemoryCache();
+
+                    // The setting below shows encryption which works on a single machine. 
+                    // In a distributed system, the encryption keys must be shared between all machines
+                    // For details see https://github.com/AzureAD/microsoft-identity-web/wiki/L1-Cache-in-Distributed-(L2)-Token-Cache#distributed-systems
                     services.Configure<MsalDistributedTokenCacheAdapterOptions>(o =>
                     {
                         o.Encrypt = true;
