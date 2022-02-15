@@ -77,7 +77,7 @@ namespace WebApp
             // Upon successful sign in, get the access token & cache it using MSAL
             IConfidentialClientApplication clientApp = MsalAppBuilder.BuildConfidentialClientApplication();
             AuthenticationResult result = await clientApp.AcquireTokenByAuthorizationCode(new[] { "Mail.Read" }, context.Code)
-                .WithSpaAuthorizationCode()
+                .WithSpaAuthorizationCode() //Request an authcode for the front end
                 .ExecuteAsync();
 
             HttpContext.Current.Session.Add("Spa_Auth_Code", result.SpaAuthCode);
