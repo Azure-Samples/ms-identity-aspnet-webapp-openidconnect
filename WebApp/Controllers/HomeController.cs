@@ -191,10 +191,9 @@ namespace WebApp.Controllers
         public async Task<ActionResult> ViewProfile()
         {
             IConfidentialClientApplication app = MsalAppBuilder.BuildConfidentialClientApplication();
-            AuthenticationResult result = null;
+
             var accountId = ClaimsPrincipal.Current.GetAccountId();
             var account = await app.GetAccountAsync(accountId);
-            string[] scopes = { "user.read" };
 
             var spaAuthCode = HttpContext.Session["Spa_Auth_Code"];
 
