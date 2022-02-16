@@ -201,22 +201,6 @@ namespace WebApp.Controllers
             ViewBag.SpaAuthCode = spaAuthCode as string;
             ViewBag.Account = account as IAccount;
 
-            try
-            {
-                // try to get token silently
-                result = await app.AcquireTokenSilent(scopes, account).ExecuteAsync().ConfigureAwait(false);
-            }
-            catch (MsalUiRequiredException)
-            {
-                ViewBag.Relogin = "true";
-                return View();
-            }
-            catch (Exception eee)
-            {
-                ViewBag.Error = "An error has occurred. Details: " + eee.Message;
-                return View();
-            }
-
             return View();
         }
 
