@@ -40,7 +40,7 @@ namespace WebApp
                     ClientId = AuthenticationConfig.ClientId,
                     RedirectUri = AuthenticationConfig.RedirectUri,
                     PostLogoutRedirectUri = AuthenticationConfig.RedirectUri,
-                    Scope = AuthenticationConfig.BasicSignInScopes + " Mail.Read", // a basic set of permissions for user sign in & profile access "openid profile offline_access"
+                    Scope = AuthenticationConfig.BasicSignInScopes + " Mail.Read User.Read", // a basic set of permissions for user sign in & profile access "openid profile offline_access"
                     TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = false,
@@ -76,7 +76,7 @@ namespace WebApp
         {
             // Upon successful sign in, get the access token & cache it using MSAL
             IConfidentialClientApplication clientApp = MsalAppBuilder.BuildConfidentialClientApplication();
-            AuthenticationResult result = await clientApp.AcquireTokenByAuthorizationCode(new[] { "Mail.Read" }, context.Code)
+            AuthenticationResult result = await clientApp.AcquireTokenByAuthorizationCode(new[] { "Mail.Read User.Read" }, context.Code)
                 .WithSpaAuthorizationCode() //Request an authcode for the front end
                 .ExecuteAsync();
 
