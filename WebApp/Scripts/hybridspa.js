@@ -117,16 +117,6 @@ function getTokenPopup(spaCode) {
 
 }
 
-//Read Email
-function readMail(spaCode) {
-    getTokenPopup(spaCode)
-        .then(response => {
-            callMSGraph(graphConfig.graphMailEndpoint, response.accessToken, updateUI);
-        }).catch(error => {
-            console.log(error);
-        });
-}
-
 //See Profile
 function seeProfile(spaCode) {
     getTokenPopup(spaCode)
