@@ -107,6 +107,7 @@
     <Content Include="Icon.png" />
     <Content Include="Scripts\bootstrap.js" />
     <Content Include="Scripts\bootstrap.min.js" />
+    <Content Include="Scripts\hybridspa.js" />
     <Content Include="Scripts\npm.js" />
     <Content Include="Scripts\_references.js" />
     <Content Include="Web.config">
@@ -128,6 +129,7 @@
     <Content Include="Views\Shared\_LoginPartial.cshtml" />
     <Content Include="Views\Home\SendMail.cshtml" />
     <Content Include="Views\Home\MailSent.cshtml" />
+    <Content Include="Views\Home\ViewProfile.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Project_Readme.html" />
@@ -155,10 +157,10 @@
       <Version>6.0.0</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Identity.Web.Certificate">
-      <Version>1.21.1</Version>
+      <Version>1.23.0</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Identity.Web.TokenCache">
-      <Version>1.21.1</Version>
+      <Version>1.23.0</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.IdentityModel.Tokens">
       <Version>6.15.0</Version>

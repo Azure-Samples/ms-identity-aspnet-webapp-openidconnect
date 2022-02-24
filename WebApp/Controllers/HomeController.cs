@@ -188,6 +188,15 @@ namespace WebApp.Controllers
             return View();
         }
 
+        public async Task<ActionResult> ViewProfile()
+        {
+            var spaAuthCode = HttpContext.Session["Spa_Auth_Code"];
+
+            ViewBag.SpaAuthCode = spaAuthCode as string;
+
+            return await Task.Run(() => View());
+        }
+
         public void RefreshSession()
         {
             HttpContext.GetOwinContext().Authentication.Challenge(

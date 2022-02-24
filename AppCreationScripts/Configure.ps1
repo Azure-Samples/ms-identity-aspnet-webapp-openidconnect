@@ -213,7 +213,7 @@ Function ConfigureApplications
    # Add Required Resources Access (from 'service' to 'Microsoft Graph')
    Write-Host "Getting access from 'service' to 'Microsoft Graph'"
    $requiredPermissions = GetRequiredPermissions -applicationDisplayName "Microsoft Graph" `
-                                                -requiredDelegatedPermissions "openid|profile|offline_access|Mail.Read" `
+                                                -requiredDelegatedPermissions "openid|profile|offline_access|Mail.Read|User.Read" `
 
    $requiredResourcesAccess.Add($requiredPermissions)
 
