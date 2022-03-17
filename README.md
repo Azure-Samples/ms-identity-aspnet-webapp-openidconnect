@@ -26,9 +26,13 @@ description: "This sample showcases how to develop a ASP.NET MVC web application
 
 This sample showcases how to develop a web application that handles sign using the Microsoft identity platform. It shows you how to use the new unified signing-in model that can be used to sign-in users to the app with both their [work/school account  (Azure AD account) or Microsoft account (MSA)](https://docs.microsoft.com/azure/active-directory/develop/azure-ad-endpoint-comparison). The application is implemented as an ASP.NET MVC project, while the web sign-on functionality is implemented via ASP.NET OpenId Connect OWIN middleware.
 
-The sample also shows how to use [MSAL.NET (Microsoft Authentication Library)](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet) to obtain an access token for [Microsoft Graph](https://graph.microsoft.com). Specifically, the sample shows how to retrieve the last email messages received by the signed in user, and how to send a mail message as the user using Microsoft Graph.
+The sample shows how to use [MSAL.NET (Microsoft Authentication Library)](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet) to obtain an access token for [Microsoft Graph](https://graph.microsoft.com). Specifically, the sample shows how to retrieve the last email messages received by the signed in user, and how to send a mail message as the user using Microsoft Graph.
 
-Finally, the sample showcases a new capability introduced by the new Microsoft identity platform - the ability for one app to seek consent for new permissions [incrementally](https://docs.microsoft.com/azure/active-directory/develop/azure-ad-endpoint-comparison#incremental-and-dynamic-consent).
+The sample also showcases a new capability introduced by the new Microsoft identity platform - the ability for one app to seek consent for new permissions [incrementally](https://docs.microsoft.com/azure/active-directory/develop/azure-ad-endpoint-comparison#incremental-and-dynamic-consent).
+
+Finally, the sample demonstrates how to use MSAL.js v2 and MSAL .Net together in a "hybrid" application that performs both server-side and client-side authenication. Some applications like SharePoint and OWA are built as "hybrid" web applications, which are built with server-side and client-side components (e.g. an ASP.net web application hosting a React single-page application). In these scenarios, the application will likely need authentication both client-side (e.g. a public client using MSAL.js) and server-side (e.g. a confidential client using MSAL.net ), and each application context will need to acquire its own tokens.
+
+It shows how to use two new APIs, WithSpaAuthorizationCode on AcquireTokenByAuthorizationCode in MSAL .Net and acquireTokenByCode in MSAL.js v2, to authenticate a user server-side using a confidential client, and then SSO that user client-side using a second authorization code that is returned to the confidential client and redeemed by the public client client-side. This helps mitigate user experience and performance concerns that arise when performing server-side and client-side authentication for the same user, especially when third-party cookies are blocked by the browser.
 
 For more information about how the protocols work in this scenario and other scenarios, see [Authentication Scenarios for Azure AD](http://go.microsoft.com/fwlink/?LinkId=394414).
 
@@ -143,7 +147,7 @@ As a first step you'll need to:
    - Click the **Add a permission** button and then,
    - Ensure that the **Microsoft APIs** tab is selected
    - In the *Commonly used Microsoft APIs* section, click on **Microsoft Graph**
-   - In the **Delegated permissions** section, ensure that the right permissions are checked: **openid**, **profile**, **offline_access**, **Mail.Read**. Use the search box if necessary.
+   - In the **Delegated permissions** section, ensure that the right permissions are checked: **openid**, **profile**, **offline_access**, **Mail.Read**, **User.Read**. Use the search box if necessary.
    - Select the **Add permissions** button
 
 #### Change the application's manifest to enable both Work and School and Microsoft Accounts 
@@ -187,6 +191,11 @@ As you sign in, the app will change the sign-in button into a greeting to the cu
 
 Click on **Read Mail**: the app will show a dump of the last few messages from the current user's inbox, as they are received from the Microsoft Graph.
 
+Click on **View Profile**: the app will show the profile of the current user, as they are received from the Microsoft Graph.
+
+> The sample redeems the Spa Auth Code from the initial token aquisition. You will need to sign-out and sign back in to request the SPA Auth Code.
+> If you want to add more client side functionallity, please refer to the [MSAL JS Browser Sample for Hybrid SPA](https://github.com/AzureAD/microsoft-authentication-library-for-js/tree/dev/samples/msal-browser-samples/HybridSample)
+
 Click on **Send Mail**. As it is the first time you do so, you will receive a message informing you that for the app to receive the permissions to send mail as the user, the user needs to grant additional consent. The message offers a link to initiate the process.
 
 ![Incremental Consent Link](./ReadmeFiles/IncrementalConsentLink.jpg)
@@ -220,7 +229,7 @@ app.UseOpenIdConnectAuthentication(
         ClientId = Globals.ClientId,
         RedirectUri = Globals.RedirectUri,
         PostLogoutRedirectUri = Globals.RedirectUri,
-        Scope = Globals.BasicSignInScopes + " Mail.Read", // a basic set of permissions for user sign in & profile access "openid profile offline_access"
+        Scope = Globals.BasicSignInScopes + " Mail.Read User.Read", // a basic set of permissions for user sign in & profile access "openid profile offline_access"
         TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = false,
@@ -254,14 +263,18 @@ This sample makes use of OpenId Connect hybrid flow, where at authentication tim
 
 This sample shows how to use MSAL to redeem the authorization code into an access token, which is saved in a cache along with any other useful artifact (such as associated  [refresh_tokens](https://docs.microsoft.com/azure/active-directory/develop/v2-oauth2-auth-code-flow#refresh-the-access-token)) so that it can be used later on in the application from the controllers' actions to fetch access tokens after they are expired.
 
-The redemption takes place in the `AuthorizationCodeReceived` notification of the authorization middleware. Here there's the relevant code:
+The redemption takes place in the `AuthorizationCodeReceived` notification of the authorization middleware. This is the section where the new MSAL.Net `WithSpaAuthorizationCode` API is used to get the `SpaAuthCode`. Here there's the relevant code:
 
 ```CSharp
         private async Task OnAuthorizationCodeReceived(AuthorizationCodeReceivedNotification context)
         {
             // Upon successful sign in, get the access token & cache it using MSAL
-            IConfidentialClientApplication clientApp = MsalAppBuilder.BuildConfidentialClientApplication(new ClaimsPrincipal(context.AuthenticationTicket.Identity));
-            AuthenticationResult result = await clientApp.AcquireTokenByAuthorizationCode(new[] { "Mail.Read" }, context.Code).ExecuteAsync();
+            IConfidentialClientApplication clientApp = MsalAppBuilder.BuildConfidentialClientApplication();
+            AuthenticationResult result = await clientApp.AcquireTokenByAuthorizationCode(new[] { "Mail.Read User.Read" }, context.Code)
+                .WithSpaAuthorizationCode() //Request an authcode for the front end
+                .ExecuteAsync();
+
+            HttpContext.Current.Session.Add("Spa_Auth_Code", result.SpaAuthCode);
         }
 ```
 
@@ -342,6 +355,60 @@ That done, all you need to do is to invoke `AcquireTokenSilent`, asking for the 
 In the case in which refresh tokens are not present or they fail to obtain a new access token, MSAL will throw `MsalUiRequiredException`. That means that in order to obtain the requested token, the user must go through an interactive sign-in experience.
 
 In the case of this sample, the `Mail.Read` permission is obtained as part of the login process - hence we need to trigger a new login; however we can't just redirect the user without warning, as it might be disorienting (what is happening, or why, would not be obvious to the user) and there might still be things they can do with the app that do not entail accessing mail. For that reason, the sample simply signals to the view to show a warning - and to offer a link to an action (`RefreshSession`) that the user can leverage for explicitly initiating the re-authentication process.
+
+
+### Using Spa Auth Code in the Front End
+
+First, configure a new PublicClientApplication from MSAL.js in your single-page application:
+
+```JS
+const msalInstance = new msal.PublicClientApplication({
+    auth: {
+        clientId: "Enter the Client ID from the Web.Config file",
+        redirectUri: "https://localhost:44326/",
+        authority: "https://login.microsoftonline.com/organizations/"
+    }
+})
+```
+
+Next, render the code that was acquired server-side, and provide it to the acquireTokenByCode API on the MSAL.js PublicClientApplication instance. Be sure to not include any additional scopes that were not included in the first login request, otherwise the user may be prompted for consent.
+
+```js
+    var code = spaCode;
+    const scopes = ["user.read"];
+
+    console.log('MSAL: acquireTokenByCode hybrid parameters present');
+
+    var authResult = msalInstance.acquireTokenByCode({
+        code,
+        scopes
+    })
+```
+
+Once the Access Token is retrieved using the new MSAL.js `acquireTokenByCode` api, the token is then used to read the user's profile 
+
+```js
+function callMSGraph(endpoint, token, callback) {
+    const headers = new Headers();
+    const bearer = `Bearer ${token}`;
+    headers.append("Authorization", bearer);
+
+    const options = {
+        method: "GET",
+        headers: headers
+    };
+
+    console.log('request made to Graph API at: ' + new Date().toString());
+
+    fetch(endpoint, options)
+        .then(response => response.json())
+        .then(response => callback(response, endpoint))
+        .then(result => {
+            console.log('Successfully Fetched Data from Graph API:', result);
+        })
+        .catch(error => console.log(error))
+}
+```
 
 ### Handling incremental consent and OAuth2 code redemption
 
