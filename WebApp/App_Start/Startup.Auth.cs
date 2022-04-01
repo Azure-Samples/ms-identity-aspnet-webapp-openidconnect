@@ -35,6 +35,10 @@ namespace WebApp
             app.UseOpenIdConnectAuthentication(
                 new OpenIdConnectAuthenticationOptions
                 {
+                    // This is needed for PKCE and resposne type must be set to 'code'
+                    UsePkce = true,
+                    ResponseType = OpenIdConnectResponseType.Code,
+
                     // The `Authority` represents the v2.0 endpoint - https://login.microsoftonline.com/common/v2.0
                     Authority = AuthenticationConfig.Authority,
                     ClientId = AuthenticationConfig.ClientId,
@@ -74,13 +78,20 @@ namespace WebApp
 
         private async Task OnAuthorizationCodeReceived(AuthorizationCodeReceivedNotification context)
         {
+            context.HandleCodeRedemption();
+            context.TokenEndpointRequest.Parameters.TryGetValue("code_verifier", out var codeVerifier);
+
             // Upon successful sign in, get the access token & cache it using MSAL
             IConfidentialClientApplication clientApp = MsalAppBuilder.BuildConfidentialClientApplication();
             AuthenticationResult result = await clientApp.AcquireTokenByAuthorizationCode(new[] { "Mail.Read User.Read" }, context.Code)
                 .WithSpaAuthorizationCode() //Request an authcode for the front end
+                .WithPkceCodeVerifier(codeVerifier) // Code verifier for PKCE
                 .ExecuteAsync();
 
             HttpContext.Current.Session.Add("Spa_Auth_Code", result.SpaAuthCode);
+
+            context.TokenEndpointResponse.AccessToken = result.AccessToken;
+            context.TokenEndpointResponse.IdToken = result.IdToken;
         }
 
         private Task OnAuthenticationFailed(AuthenticationFailedNotification<OpenIdConnectMessage, OpenIdConnectAuthenticationOptions> notification)
