@@ -78,7 +78,6 @@ namespace WebApp
 
         private async Task OnAuthorizationCodeReceived(AuthorizationCodeReceivedNotification context)
         {
-            context.HandleCodeRedemption();
             context.TokenEndpointRequest.Parameters.TryGetValue("code_verifier", out var codeVerifier);
 
             // Upon successful sign in, get the access token & cache it using MSAL
@@ -90,8 +89,7 @@ namespace WebApp
 
             HttpContext.Current.Session.Add("Spa_Auth_Code", result.SpaAuthCode);
 
-            context.TokenEndpointResponse.AccessToken = result.AccessToken;
-            context.TokenEndpointResponse.IdToken = result.IdToken;
+            context.HandleCodeRedemption(result.AccessToken, result.IdToken);
         }
 
         private Task OnAuthenticationFailed(AuthenticationFailedNotification<OpenIdConnectMessage, OpenIdConnectAuthenticationOptions> notification)
