@@ -89,6 +89,10 @@ namespace WebApp
 
             HttpContext.Current.Session.Add("Spa_Auth_Code", result.SpaAuthCode);
 
+            // This continues the authentication flow using the access token and id token retrieved by the clientApp object after
+            // redeeming an access token using the access code.
+            //
+            // This is needed to ensure the middleware does not try and redeem the received access code a second time.
             context.HandleCodeRedemption(result.AccessToken, result.IdToken);
         }
 
