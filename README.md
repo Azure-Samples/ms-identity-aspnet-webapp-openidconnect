@@ -131,10 +131,6 @@ As a first step you'll need to:
    - In the Redirect URI (optional) section, select **Web** in the combo-box and enter the following redirect URIs: `https://localhost:44326/`.
 1. Select **Register** to create the application.
 1. On the app **Overview** page, find the **Application (client) ID** value and record it for later. You'll need it to configure the Visual Studio configuration file for this project.
-1. From the app's Overview page, select the **Authentication** section.
-   - In the **Advanced settings** | **Implicit grant** section, check **ID tokens** as this sample requires
-     the [Implicit grant flow](https://docs.microsoft.com/azure/active-directory/develop/v2-oauth2-implicit-grant-flow) to be enabled to
-     sign-in the user, and call an API.
 1. Select **Save**.
 1. From the **Certificates & secrets** page, in the **Client secrets** section, choose **New client secret**:
 
