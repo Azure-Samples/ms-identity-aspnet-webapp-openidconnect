@@ -34,13 +34,6 @@ namespace WebApp.Utils
 {
     public static class MsalAppBuilder
     {
-        public static string GetAccountId(this ClaimsPrincipal claimsPrincipal)
-        {
-            string oid = claimsPrincipal.GetObjectId();
-            string tid = claimsPrincipal.GetTenantId();
-            return $"{oid}.{tid}";
-        }
-
         private static IConfidentialClientApplication clientapp;
 
         public static IConfidentialClientApplication BuildConfidentialClientApplication()
@@ -89,7 +82,7 @@ namespace WebApp.Utils
         {
             BuildConfidentialClientApplication();
 
-            var userAccount = await clientapp.GetAccountAsync(ClaimsPrincipal.Current.GetAccountId());
+            var userAccount = await clientapp.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
             if (userAccount != null)
             {
                 await clientapp.RemoveAsync(userAccount);

@@ -33,6 +33,7 @@ namespace WebApp
                 });
 
             app.UseOpenIdConnectAuthentication(
+                
                 new OpenIdConnectAuthenticationOptions
                 {
                     // This is needed for PKCE and resposne type must be set to 'code'
@@ -47,6 +48,7 @@ namespace WebApp
                     Scope = AuthenticationConfig.BasicSignInScopes + " Mail.Read User.Read", // a basic set of permissions for user sign in & profile access "openid profile offline_access"
                     TokenValidationParameters = new TokenValidationParameters
                     {
+                        //SaveSigninToken = true,
                         ValidateIssuer = false,
                         // In a real application you would use IssuerValidator for additional checks, like making sure the user's organization has signed up for your app.
                         //     IssuerValidator = (issuer, token, tvp) =>
@@ -60,9 +62,15 @@ namespace WebApp
                     },
                     Notifications = new OpenIdConnectAuthenticationNotifications()
                     {
+                        // When we get an auth_code, use MSAL to fetch tokens and to cache them
                         AuthorizationCodeReceived = OnAuthorizationCodeReceived,
-                        AuthenticationFailed = OnAuthenticationFailed,
+                        AuthenticationFailed = OnAuthenticationFailed,      
+                        
+                        // Before making the /authorize call, make sure to request client_info for MSAL caching
                         RedirectToIdentityProvider = OnRedirectToIdentityProvider,
+
+                        // At this point we'll have an id_token / ClaimsPrincipal which we'll enhance with 2 extra claims: home object id and home tenant id. These are used by MSAL for caching.
+                        SecurityTokenValidated = OnSecurityTokenValidated,                              
                     },
                     // Handling SameSite cookie according to https://docs.microsoft.com/en-us/aspnet/samesite/owin-samesite
                     CookieManager = new SameSiteCookieManager(
@@ -70,9 +78,36 @@ namespace WebApp
                 });
         }
 
+
+        /// <summary>
+        /// When OWIN has the id_token and creates the ClaimsPrincipal from it, enhance it with 2 extra claims: home object id and home tenant id. These are used by MSAL for caching.
+        /// </summary>
+        private Task OnSecurityTokenValidated(SecurityTokenValidatedNotification<OpenIdConnectMessage, OpenIdConnectAuthenticationOptions> context)
+        {
+            string clientInfo = HttpContext.Current.Session[ClientInfo.ClientInfoParamName]?.ToString();
+
+
+            if (!string.IsNullOrEmpty(clientInfo))
+            {
+                ClientInfo clientInfoFromServer = ClientInfo.CreateFromJson(clientInfo);
+
+                if (clientInfoFromServer != null && clientInfoFromServer.UniqueTenantIdentifier != null && clientInfoFromServer.UniqueObjectIdentifier != null)
+                {
+                    context.AuthenticationTicket.Identity.AddClaim(new Claim(ClientInfo.UniqueTenantIdentifierName, clientInfoFromServer.UniqueTenantIdentifier));
+                    context.AuthenticationTicket.Identity.AddClaim(new Claim(ClientInfo.UniqueObjectIdentifierName, clientInfoFromServer.UniqueObjectIdentifier));
+                }
+            }
+
+            HttpContext.Current.Session.Remove(ClientInfo.ClientInfoParamName);
+
+            return Task.CompletedTask;
+        }
+
+
         private  Task OnRedirectToIdentityProvider(RedirectToIdentityProviderNotification<OpenIdConnectMessage, OpenIdConnectAuthenticationOptions> arg)
         {
-            arg.ProtocolMessage.SetParameter("myNewParameter", "its Value");
+            // client_info ensures that the response will contain a base64 encoded 
+            arg.ProtocolMessage.SetParameter("client_info", "1");
             return Task.CompletedTask;
         }
 
@@ -83,17 +118,21 @@ namespace WebApp
             // Upon successful sign in, get the access token & cache it using MSAL
             IConfidentialClientApplication clientApp = MsalAppBuilder.BuildConfidentialClientApplication();
             AuthenticationResult result = await clientApp.AcquireTokenByAuthorizationCode(new[] { "Mail.Read User.Read" }, context.Code)
-                .WithSpaAuthorizationCode() //Request an authcode for the front end
+                //.WithSpaAuthorizationCode() //Optional: Request an authorization code for the front end - this is faster than having front end get tokens on its own
                 .WithPkceCodeVerifier(codeVerifier) // Code verifier for PKCE
                 .ExecuteAsync();
 
-            HttpContext.Current.Session.Add("Spa_Auth_Code", result.SpaAuthCode);
+            //HttpContext.Current.Session.Add("Spa_Auth_Code", result.SpaAuthCode);
 
             // This continues the authentication flow using the access token and id token retrieved by the clientApp object after
             // redeeming an access token using the access code.
             //
             // This is needed to ensure the middleware does not try and redeem the received access code a second time.
-            context.HandleCodeRedemption(result.AccessToken, result.IdToken);
+
+            // persist the client_info 
+            HttpContext.Current.Session.Add("client_info", context.ProtocolMessage.GetParameter(ClientInfo.ClientInfoParamName));
+
+            context.HandleCodeRedemption(null, result.IdToken);
         }
 
         private Task OnAuthenticationFailed(AuthenticationFailedNotification<OpenIdConnectMessage, OpenIdConnectAuthenticationOptions> notification)

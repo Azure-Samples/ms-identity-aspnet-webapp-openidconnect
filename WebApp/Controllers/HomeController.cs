@@ -46,7 +46,9 @@ namespace WebApp.Controllers
         {
             // Before we render the send email screen, we use the incremental consent to obtain and cache the access token with the correct scopes
             IConfidentialClientApplication app = MsalAppBuilder.BuildConfidentialClientApplication();
-            var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetAccountId());
+
+            string accountId = ClaimsPrincipal.Current.GetMsalAccountId();
+            var account = await app.GetAccountAsync(accountId);
             string[] scopes = { "Mail.Send" };
 
             try
@@ -113,7 +115,7 @@ namespace WebApp.Controllers
 
             IConfidentialClientApplication app = MsalAppBuilder.BuildConfidentialClientApplication();
             AuthenticationResult result = null;
-            var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetAccountId());
+            var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetMsalAccountId());
             string[] scopes = { "Mail.Send" };
 
             try
@@ -155,7 +157,10 @@ namespace WebApp.Controllers
         {
             IConfidentialClientApplication app = MsalAppBuilder.BuildConfidentialClientApplication();
             AuthenticationResult result = null;
-            var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetAccountId());
+            string accId = ClaimsPrincipal.Current.GetMsalAccountId();
+
+            // This will be null if you restart the app, because the token cache in the sample is not durable. Use a distributed cache like Redis instead.
+            var account = await app.GetAccountAsync(accId);
             string[] scopes = { "Mail.Read" };
 
             try

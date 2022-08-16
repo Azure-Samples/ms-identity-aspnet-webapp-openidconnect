@@ -236,14 +236,18 @@ namespace WebApp.Utils
 
             string domain_hint = (tenantID == ConsumerTenantId) ? "consumers" : "organizations";
 
+            
+
             Uri authzMessageUri = await cca
                 .GetAuthorizationRequestUrl(scopes)
                 .WithRedirectUri(oauthCodeProcessingPath.ToString())
                 .WithLoginHint(preferredUsername)
-                .WithExtraQueryParameters(state == null ? null : "&state=" + state + "&domain_hint=" + domain_hint)
+                .WithExtraQueryParameters(state == null ? null : "&state=" + state + "&domain_hint=" + domain_hint + "&client_info=1")
                 .WithAuthority(cca.Authority)
                 .ExecuteAsync(CancellationToken.None)
                 .ConfigureAwait(false);
+
+            
 
             return authzMessageUri.ToString();
         }
