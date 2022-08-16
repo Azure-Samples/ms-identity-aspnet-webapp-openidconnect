@@ -48,7 +48,6 @@ namespace WebApp
                     Scope = AuthenticationConfig.BasicSignInScopes + " Mail.Read User.Read", // a basic set of permissions for user sign in & profile access "openid profile offline_access"
                     TokenValidationParameters = new TokenValidationParameters
                     {
-                        //SaveSigninToken = true,
                         ValidateIssuer = false,
                         // In a real application you would use IssuerValidator for additional checks, like making sure the user's organization has signed up for your app.
                         //     IssuerValidator = (issuer, token, tvp) =>
@@ -96,9 +95,9 @@ namespace WebApp
                     context.AuthenticationTicket.Identity.AddClaim(new Claim(ClientInfo.UniqueTenantIdentifierName, clientInfoFromServer.UniqueTenantIdentifier));
                     context.AuthenticationTicket.Identity.AddClaim(new Claim(ClientInfo.UniqueObjectIdentifierName, clientInfoFromServer.UniqueObjectIdentifier));
                 }
-            }
 
-            HttpContext.Current.Session.Remove(ClientInfo.ClientInfoParamName);
+                HttpContext.Current.Session.Remove(ClientInfo.ClientInfoParamName);
+            }
 
             return Task.CompletedTask;
         }
@@ -118,18 +117,18 @@ namespace WebApp
             // Upon successful sign in, get the access token & cache it using MSAL
             IConfidentialClientApplication clientApp = MsalAppBuilder.BuildConfidentialClientApplication();
             AuthenticationResult result = await clientApp.AcquireTokenByAuthorizationCode(new[] { "Mail.Read User.Read" }, context.Code)
-                //.WithSpaAuthorizationCode() //Optional: Request an authorization code for the front end - this is faster than having front end get tokens on its own
+                .WithSpaAuthorizationCode() //Optional: Request an authorization code for the front end - this is faster than having front end get tokens on its own
                 .WithPkceCodeVerifier(codeVerifier) // Code verifier for PKCE
                 .ExecuteAsync();
 
-            //HttpContext.Current.Session.Add("Spa_Auth_Code", result.SpaAuthCode);
+            HttpContext.Current.Session.Add("Spa_Auth_Code", result.SpaAuthCode);
 
             // This continues the authentication flow using the access token and id token retrieved by the clientApp object after
             // redeeming an access token using the access code.
             //
             // This is needed to ensure the middleware does not try and redeem the received access code a second time.
 
-            // persist the client_info 
+            // persist the client_info until we have the ClaimsPrincipal, i.e. until OnSecurityTokenValidated is invoked
             HttpContext.Current.Session.Add("client_info", context.ProtocolMessage.GetParameter(ClientInfo.ClientInfoParamName));
 
             context.HandleCodeRedemption(null, result.IdToken);
