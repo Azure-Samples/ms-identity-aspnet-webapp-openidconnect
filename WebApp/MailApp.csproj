@@ -169,7 +169,7 @@
       <Version>4.2.1</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Owin.Security.Cookies">
-      <Version>4.2.1</Version>
+      <Version>4.2.2</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Owin.Security.OpenIdConnect">
       <Version>4.2.1</Version>
