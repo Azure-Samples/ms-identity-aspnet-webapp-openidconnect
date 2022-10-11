@@ -118,23 +118,23 @@ namespace WebApp.Controllers
             }
             catch (ServiceException graphEx) when (graphEx.InnerException is MicrosoftIdentityWebChallengeUserException)
             {
-                Dictionary<string, string> claimsChallenge = new Dictionary<string, string>();
                 var exc = graphEx.InnerException as MicrosoftIdentityWebChallengeUserException;
+                var authenticationProperties = new AuthenticationProperties();
                 if (exc.Scopes != null)
                 {
-                    claimsChallenge.Add("scopes", string.Join(" ", exc.Scopes));
+                    authenticationProperties.Dictionary.Add("scopes", string.Join(" ", exc.Scopes));
                 }
                 if (!string.IsNullOrEmpty(exc.MsalUiRequiredException.Claims))
                 {
-                    claimsChallenge.Add("claims", exc.MsalUiRequiredException.Claims);
-                }
-                var authenticationProperties = new AuthenticationProperties(claimsChallenge);
+                    authenticationProperties.Dictionary.Add("claims", exc.MsalUiRequiredException.Claims);
+                }               
 
                 HttpContext.GetOwinContext().Authentication.Challenge(authenticationProperties, OpenIdConnectAuthenticationDefaults.AuthenticationType);
                 return View();
             }
             catch (Exception ex)
             {
+                ViewBag.Message = ex.Message;
                 return View();
             }
         }
