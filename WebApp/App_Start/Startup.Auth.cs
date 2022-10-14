@@ -12,6 +12,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using WebApp.Utils;
 using System.Web;
+using System.Net;
 
 namespace WebApp
 {
@@ -19,6 +20,8 @@ namespace WebApp
     {
         public void ConfigureAuth(IAppBuilder app)
         {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Ssl3; // only allow TLSV1.2 and SSL3
+
             app.SetDefaultSignInAsAuthenticationType(CookieAuthenticationDefaults.AuthenticationType);
 
             app.UseCookieAuthentication(new CookieAuthenticationOptions());
