@@ -127,7 +127,9 @@ namespace WebApp.Controllers
                 if (!string.IsNullOrEmpty(exc.MsalUiRequiredException.Claims))
                 {
                     authenticationProperties.Dictionary.Add("claims", exc.MsalUiRequiredException.Claims);
-                }               
+                }
+                authenticationProperties.Dictionary.Add("login_hint", (HttpContext.User as ClaimsPrincipal).GetDisplayName());
+                authenticationProperties.Dictionary.Add("domain_hint", (HttpContext.User as ClaimsPrincipal).GetDomainHint());
 
                 HttpContext.GetOwinContext().Authentication.Challenge(authenticationProperties, OpenIdConnectAuthenticationDefaults.AuthenticationType);
                 return View();
