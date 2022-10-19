@@ -5,6 +5,7 @@ using Microsoft.Owin.Security.Cookies;
 using Owin;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Identity.Web.TokenCacheProviders.InMemory;
+using Microsoft.IdentityModel.Validators;
 
 namespace WebApp
 {
@@ -21,6 +22,10 @@ namespace WebApp
                 services.Configure<ConfidentialClientApplicationOptions>(options => { options.RedirectUri = "https://localhost:44326/"; });
                 services.AddMicrosoftGraph();
                 services.AddInMemoryTokenCaches();
+            },
+            updateOptions: options=>
+            {
+                options.TokenValidationParameters.IssuerValidator = AadIssuerValidator.GetAadIssuerValidator(options.Authority).Validate;
             });
 
         }
