@@ -45,10 +45,23 @@ namespace WebApp.Controllers
             return View();
         }
 
-        public async Task<ActionResult> SendMail()
+        public async Task<ActionResult> ComposeMail()
         {
-            ITokenAcquirer tokenAcquirer = TokenAcquirerFactory.GetDefaultInstance().GetTokenAcquirer();
-            var result = await tokenAcquirer.GetTokenForUserAsync(new[] { "Mail.Send" });
+            try
+            {
+                ITokenAcquirer tokenAcquirer = TokenAcquirerFactory.GetDefaultInstance().GetTokenAcquirer();
+                var result = await tokenAcquirer.GetTokenForUserAsync(new[] { "Mail.Send" });
+            }
+            catch (ServiceException graphEx) when (graphEx.InnerException is MicrosoftIdentityWebChallengeUserException)
+            {
+                ChallengeUser(graphEx.InnerException as MicrosoftIdentityWebChallengeUserException);
+                return View();
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Message = ex.Message;
+                return View("SendMail");
+            }
 
             return View();
         }
@@ -91,15 +104,16 @@ namespace WebApp.Controllers
                     .SendMail(message, true)
                     .Request()
                     .WithScopes("Mail.Send").PostAsync();
-                return View();
+                return View("MailSent");
             }
             catch (ServiceException graphEx) when (graphEx.InnerException is MicrosoftIdentityWebChallengeUserException)
             {
-                HttpContext.GetOwinContext().Authentication.Challenge(OpenIdConnectAuthenticationDefaults.AuthenticationType);
+                ChallengeUser(graphEx.InnerException as MicrosoftIdentityWebChallengeUserException);
                 return View();
             }
             catch(Exception ex)
             {
+                ViewBag.Message = ex.Message;
                 return View();
             }
         }
@@ -118,20 +132,7 @@ namespace WebApp.Controllers
             }
             catch (ServiceException graphEx) when (graphEx.InnerException is MicrosoftIdentityWebChallengeUserException)
             {
-                var exc = graphEx.InnerException as MicrosoftIdentityWebChallengeUserException;
-                var authenticationProperties = new AuthenticationProperties();
-                if (exc.Scopes != null)
-                {
-                    authenticationProperties.Dictionary.Add("scopes", string.Join(" ", exc.Scopes));
-                }
-                if (!string.IsNullOrEmpty(exc.MsalUiRequiredException.Claims))
-                {
-                    authenticationProperties.Dictionary.Add("claims", exc.MsalUiRequiredException.Claims);
-                }
-                authenticationProperties.Dictionary.Add("login_hint", (HttpContext.User as ClaimsPrincipal).GetDisplayName());
-                authenticationProperties.Dictionary.Add("domain_hint", (HttpContext.User as ClaimsPrincipal).GetDomainHint());
-
-                HttpContext.GetOwinContext().Authentication.Challenge(authenticationProperties, OpenIdConnectAuthenticationDefaults.AuthenticationType);
+                ChallengeUser(graphEx.InnerException as MicrosoftIdentityWebChallengeUserException);
                 return View();
             }
             catch (Exception ex)
@@ -139,6 +140,27 @@ namespace WebApp.Controllers
                 ViewBag.Message = ex.Message;
                 return View();
             }
+        }
+
+        /// <summary>
+        /// Challenge the user based on the exception.
+        /// </summary>
+        /// <param name="exc"></param>
+        private void ChallengeUser(MicrosoftIdentityWebChallengeUserException exc)
+        {
+            var authenticationProperties = new AuthenticationProperties();
+            if (exc.Scopes != null)
+            {
+                authenticationProperties.Dictionary.Add("scopes", string.Join(" ", exc.Scopes));
+            }
+            if (!string.IsNullOrEmpty(exc.MsalUiRequiredException.Claims))
+            {
+                authenticationProperties.Dictionary.Add("claims", exc.MsalUiRequiredException.Claims);
+            }
+            authenticationProperties.Dictionary.Add("login_hint", (HttpContext.User as ClaimsPrincipal).GetDisplayName());
+            authenticationProperties.Dictionary.Add("domain_hint", (HttpContext.User as ClaimsPrincipal).GetDomainHint());
+
+            HttpContext.GetOwinContext().Authentication.Challenge(authenticationProperties, OpenIdConnectAuthenticationDefaults.AuthenticationType);
         }
 
         public async Task<ActionResult> ViewProfile()

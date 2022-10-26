@@ -1,0 +1,17 @@
+﻿
+@{
+    ViewBag.Title = "Checking permissions to send an email";
+}
+
+<h2>@ViewBag.Title</h2>
+
+@if (ViewBag.AuthorizationRequest != null)
+{
+    <text>
+        This page requires you to grant additional permissions to the app. Click <a href="@ViewBag.AuthorizationRequest">here</a> to be redirected to the consent experience.
+    </text>
+}
+else
+{
+ 
+}
