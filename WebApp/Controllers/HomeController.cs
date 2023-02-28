@@ -1,12 +1,16 @@
-﻿using Microsoft.Identity.Client;
+﻿using Microsoft.Graph;
+using Microsoft.Identity.Abstractions;
+using Microsoft.Identity.Client;
 using Microsoft.Identity.Web;
 using Microsoft.Owin.Security;
 using Microsoft.Owin.Security.OpenIdConnect;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
@@ -15,6 +19,7 @@ using WebApp.Utils;
 
 namespace WebApp.Controllers
 {
+    [Authorize]
     public class HomeController : Controller
     {
         public ActionResult Index()
@@ -40,152 +45,122 @@ namespace WebApp.Controllers
             return View();
         }
 
-        [Authorize]
-        [HttpGet]
-        public async Task<ActionResult> SendMail()
+        public async Task<ActionResult> ComposeMail()
         {
-            // Before we render the send email screen, we use the incremental consent to obtain and cache the access token with the correct scopes
-            IConfidentialClientApplication app = MsalAppBuilder.BuildConfidentialClientApplication();
-            var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetAccountId());
-            string[] scopes = { "Mail.Send" };
-
             try
             {
-                // try to get an already cached token
-                await app.AcquireTokenSilent(scopes, account).ExecuteAsync().ConfigureAwait(false);
+                ITokenAcquirer tokenAcquirer = TokenAcquirerFactory.GetDefaultInstance().GetTokenAcquirer();
+                var result = await tokenAcquirer.GetTokenForUserAsync(new[] { "Mail.Send" });
             }
-            catch (MsalUiRequiredException ex)
+            catch (ServiceException graphEx) when (graphEx.InnerException is MicrosoftIdentityWebChallengeUserException)
             {
-                // A MsalUiRequiredException happened on AcquireTokenSilentAsync.
-                // This indicates you need to call AcquireTokenAsync to acquire a token
-                Debug.WriteLine($"MsalUiRequiredException: {ex.Message}");
-
-                try
-                {
-                    // Build the auth code request Uri
-                    string authReqUrl = await OAuth2RequestManager.GenerateAuthorizationRequestUrl(scopes, app, HttpContext, Url);
-                    ViewBag.AuthorizationRequest = authReqUrl;
-                    ViewBag.Relogin = "true";
-                }
-                catch (MsalException msalex)
-                {
-                    Response.Write($"Error Acquiring Token:{System.Environment.NewLine}{msalex}");
-                }
+                ChallengeUser(graphEx.InnerException as MicrosoftIdentityWebChallengeUserException);
+                return View();
             }
             catch (Exception ex)
             {
-                Response.Write($"Error Acquiring Token Silently:{System.Environment.NewLine}{ex}");
+                ViewBag.Message = ex.Message;
+                return View("SendMail");
             }
 
             return View();
         }
 
-        [Authorize]
-        [HttpPost]
         public async Task<ActionResult> SendMail(string recipient, string subject, string body)
         {
-            string messagetemplate = @"{{
-  ""Message"": {{
-    ""Subject"": ""{0}"",
-    ""Body"": {{
-                ""ContentType"": ""Text"",
-      ""Content"": ""{1}""
-    }},
-    ""ToRecipients"": [
-      {{
-        ""EmailAddress"": {{
-          ""Address"": ""{2}""
-        }}
-}}
-    ],
-    ""Attachments"": []
-  }},
-  ""SaveToSentItems"": ""false""
-}}
-";
-            string message = string.Format(messagetemplate, subject, body, recipient);
-
-            HttpClient client = new HttpClient();
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, "https://graph.microsoft.com/v1.0/me/sendMail")
+            var message = new Message
             {
-                Content = new StringContent(message, Encoding.UTF8, "application/json")
-            };
-
-            IConfidentialClientApplication app = MsalAppBuilder.BuildConfidentialClientApplication();
-            AuthenticationResult result = null;
-            var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetAccountId());
-            string[] scopes = { "Mail.Send" };
-
-            try
-            {
-                // try to get an already cached token
-                result = await app.AcquireTokenSilent(scopes, account).ExecuteAsync().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                /*
-                 * When the user access this page (from the HTTP GET action result) we check if they have the scope "Mail.Send" and 
-                 * we handle the additional consent step in case it is needed. Then, we acquire an access token and MSAL cache it for us.
-                 * So in this HTTP POST action result, we can always expect a token to be in cache. If they are not in the cache, 
-                 * it means that the user accessed this route via an unsual way.
-                 */
-                ViewBag.Error = "An error has occurred acquiring the token from cache. Details: " + ex.Message;
-                return View();
-            }
-
-            if (result != null)
-            {
-                // Use the token to send email
-
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", result.AccessToken);
-                HttpResponseMessage response = await client.SendAsync(request);
-
-                if (response.IsSuccessStatusCode)
+                Subject = subject,
+                Body = new ItemBody
                 {
-                    ViewBag.AuthorizationRequest = null;
-                    return View("MailSent");
+                    ContentType = BodyType.Text,
+                    Content = body
+                },
+                ToRecipients = new List<Recipient>()
+            {
+                new Recipient
+                {
+                    EmailAddress = new EmailAddress
+                    {
+                        Address = recipient
+                    }
+                }
+            },
+                        CcRecipients = new List<Recipient>()
+            {
+                new Recipient
+                {
+                    EmailAddress = new EmailAddress
+                    {
+                        Address = recipient
+                    }
                 }
             }
-
-
-            return View();
+            };
+            try
+            {
+                GraphServiceClient graphServiceClient = this.GetGraphServiceClient();
+                await graphServiceClient.Me
+                    .SendMail(message, true)
+                    .Request()
+                    .WithScopes("Mail.Send").PostAsync();
+                return View("MailSent");
+            }
+            catch (ServiceException graphEx) when (graphEx.InnerException is MicrosoftIdentityWebChallengeUserException)
+            {
+                ChallengeUser(graphEx.InnerException as MicrosoftIdentityWebChallengeUserException);
+                return View();
+            }
+            catch(Exception ex)
+            {
+                ViewBag.Message = ex.Message;
+                return View();
+            }
         }
 
         public async Task<ActionResult> ReadMail()
         {
-            IConfidentialClientApplication app = MsalAppBuilder.BuildConfidentialClientApplication();
-            AuthenticationResult result = null;
-            var account = await app.GetAccountAsync(ClaimsPrincipal.Current.GetAccountId());
-            string[] scopes = { "Mail.Read" };
-
             try
             {
-                // try to get token silently
-                result = await app.AcquireTokenSilent(scopes, account).ExecuteAsync().ConfigureAwait(false);
-            }
-            catch (MsalUiRequiredException)
-            {
-                ViewBag.Relogin = "true";
+                GraphServiceClient graphServiceClient = this.GetGraphServiceClient();
+                var messages = await graphServiceClient.Me.Messages
+                    .Request()
+                    .WithScopes("Mail.Read").GetAsync();
+                ViewBag.Message = messages.Count.ToString();
+
                 return View();
             }
-            catch (Exception eee)
+            catch (ServiceException graphEx) when (graphEx.InnerException is MicrosoftIdentityWebChallengeUserException)
             {
-                ViewBag.Error = "An error has occurred. Details: " + eee.Message;
+                ChallengeUser(graphEx.InnerException as MicrosoftIdentityWebChallengeUserException);
                 return View();
             }
-
-            if (result != null)
+            catch (Exception ex)
             {
-                // Use the token to read email
-                HttpClient hc = new HttpClient();
-                hc.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", result.AccessToken);
-                HttpResponseMessage hrm = await hc.GetAsync("https://graph.microsoft.com/v1.0/me/messages");
-
-                string rez = await hrm.Content.ReadAsStringAsync();
-                ViewBag.Message = rez;
+                ViewBag.Message = ex.Message;
+                return View();
             }
+        }
 
-            return View();
+        /// <summary>
+        /// Challenge the user based on the exception.
+        /// </summary>
+        /// <param name="exc"></param>
+        private void ChallengeUser(MicrosoftIdentityWebChallengeUserException exc)
+        {
+            var authenticationProperties = new AuthenticationProperties();
+            if (exc.Scopes != null)
+            {
+                authenticationProperties.Dictionary.Add("scopes", string.Join(" ", exc.Scopes));
+            }
+            if (!string.IsNullOrEmpty(exc.MsalUiRequiredException.Claims))
+            {
+                authenticationProperties.Dictionary.Add("claims", exc.MsalUiRequiredException.Claims);
+            }
+            authenticationProperties.Dictionary.Add("login_hint", (HttpContext.User as ClaimsPrincipal).GetDisplayName());
+            authenticationProperties.Dictionary.Add("domain_hint", (HttpContext.User as ClaimsPrincipal).GetDomainHint());
+
+            HttpContext.GetOwinContext().Authentication.Challenge(authenticationProperties, OpenIdConnectAuthenticationDefaults.AuthenticationType);
         }
 
         public async Task<ActionResult> ViewProfile()

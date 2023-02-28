@@ -22,10 +22,8 @@ namespace WebApp.Controllers
             }
         }
         
-        public async Task SignOut()
+        public void SignOut()
         {
-            await MsalAppBuilder.RemoveAccount();
-
             // Send an OpenID Connect sign-out request.
             HttpContext.GetOwinContext().Authentication.SignOut(OpenIdConnectAuthenticationDefaults.AuthenticationType, CookieAuthenticationDefaults.AuthenticationType);
         }
