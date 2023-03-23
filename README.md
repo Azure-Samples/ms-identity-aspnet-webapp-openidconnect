@@ -220,7 +220,7 @@ As it is standard practice for ASP.NET MVC apps, the sign-in functionality is im
 public void ConfigureAuth(IAppBuilder app)
 {
     // ...
-    // Get an TokenAcquirerFactory specialized for OWIN
+    // Get a TokenAcquirerFactory specialized for OWIN
     OwinTokenAcquirerFactory owinTokenAcquirerFactory = TokenAcquirerFactory.GetDefaultInstance<OwinTokenAcquirerFactory>();
 
     // Configure the web app.
