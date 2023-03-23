@@ -101,22 +101,41 @@ Function GetRequiredPermissions([string] $applicationDisplayName, [string] $requ
     return $requiredAccess
 }
 
+Function UpdateLine([string] $line, [string] $value)
+{
+    $index = $line.IndexOf('=')
+    $delimiter = ';'
+    if ($index -eq -1)
+    {
+        $index = $line.IndexOf(':')
+        $delimiter = ','
+    }
+    if ($index -ige 0)
+    {
+        $line = $line.Substring(0, $index+1) + " "+'"'+$value+'"'+$delimiter
+    }
+    return $line
+}
 
 # Replace the value of an appsettings of a given key in an XML App.Config file.
-Function ReplaceSetting([string] $configFilePath, [string] $key, [string] $newValue)
+Function UpdateTextFile([string] $configFilePath, [System.Collections.HashTable] $dictionary)
 {
-    [xml] $content = Get-Content $configFilePath
-    $appSettings = $content.configuration.appSettings; 
-    $keyValuePair = $appSettings.SelectSingleNode("descendant::add[@key='$key']")
-    if ($keyValuePair)
+    $lines = Get-Content $configFilePath
+    $index = 0
+    while($index -lt $lines.Length)
     {
-        $keyValuePair.value = $newValue;
+        $line = $lines[$index]
+        foreach($key in $dictionary.Keys)
+        {
+            if ($line.Contains($key))
+            {
+                $lines[$index] = UpdateLine $line $dictionary[$key]
+            }
+        }
+        $index++
     }
-    else
-    {
-        Throw "Key '$key' not found in file '$configFilePath'"
-    }
-   $content.save($configFilePath)
+
+    Set-Content -Path $configFilePath -Value $lines -Force
 }
 
 
@@ -222,10 +241,11 @@ Function ConfigureApplications
    Write-Host "Granted permissions."
 
    # Update config file for 'service'
-   $configFile = $pwd.Path + "\..\WebApp\Web.Config"
+   $configFile = $pwd.Path + "\..\WebApp\appsettings.json"
    Write-Host "Updating the sample code ($configFile)"
-   ReplaceSetting -configFilePath $configFile -key "ida:ClientId" -newValue ($serviceAadApplication.AppId)
-   ReplaceSetting -configFilePath $configFile -key "ida:ClientSecret" -newValue ($serviceAppKey)
+   $dictionary = @{ "ClientId" = $currentAppId;"TenantId" = $tenantId;"ClientSecret" = $serviceAppKey };
+   UpdateTextFile -configFilePath $configFile -dictionary $dictionary
+
    if($isOpenSSL -eq 'Y')
    {
         Write-Host -ForegroundColor Green "------------------------------------------------------------------------------------------------" 

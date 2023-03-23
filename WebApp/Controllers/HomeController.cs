@@ -2,6 +2,7 @@
 using Microsoft.Identity.Abstractions;
 using Microsoft.Identity.Client;
 using Microsoft.Identity.Web;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.Owin.Security;
 using Microsoft.Owin.Security.OpenIdConnect;
 using System;
@@ -151,7 +152,7 @@ namespace WebApp.Controllers
             var authenticationProperties = new AuthenticationProperties();
             if (exc.Scopes != null)
             {
-                authenticationProperties.Dictionary.Add("scopes", string.Join(" ", exc.Scopes));
+                authenticationProperties.Dictionary.Add(OpenIdConnectParameterNames.Scope, string.Join(" ", exc.Scopes));
             }
             if (!string.IsNullOrEmpty(exc.MsalUiRequiredException.Claims))
             {
