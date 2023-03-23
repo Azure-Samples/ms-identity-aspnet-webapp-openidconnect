@@ -44,19 +44,27 @@
   */
   "CodeConfiguration": [
     {
-      "App": "service",
-      "SettingKind": "XML",
-      "SettingFile": "\\..\\WebApp\\Web.Config",
-      "Mappings": [        
+      "App": "webApp",
+      "SettingKind": "Text",
+      "SettingFile": "\\..\\WebApp\\appsettings.json",
+      "Mappings": [
         {
-          "key": "ida:ClientId",
+          "key": "ClientId",
           "value": ".AppId"
         },
         {
-          "key": "ida:ClientSecret",
+          "key": "TenantId",
+          "value": "$tenantId"
+        },
+        {
+          "key": "Domain",
+          "value": "$tenantName"
+        },
+        {
+          "key": "ClientSecret",
           "value": ".AppKey"
         }
       ]
-    }    
+    }
   ]
 }

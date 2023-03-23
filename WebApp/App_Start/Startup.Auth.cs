@@ -23,20 +23,16 @@ namespace WebApp
 
             // Configure the web app.
             app.AddMicrosoftIdentityWebApp(owinTokenAcquirerFactory,
-            updateOptions: options =>
-            {
-                options.TokenValidationParameters.IssuerValidator = AadIssuerValidator.GetAadIssuerValidator(options.Authority).Validate;
-            });
+                                           updateOptions: options => {});
 
             // Add the services you need.
             owinTokenAcquirerFactory.Services
-                 .Configure<ConfidentialClientApplicationOptions>(options => { options.RedirectUri = "https://localhost:44326/"; })
+                 .Configure<ConfidentialClientApplicationOptions>(options => 
+                       { options.RedirectUri = "https://localhost:44326/"; })
                 .AddMicrosoftGraph()
                 .AddInMemoryTokenCaches();
 
             owinTokenAcquirerFactory.Build();
-
-              
         }
     }
 }
