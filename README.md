@@ -11,7 +11,7 @@ languages:
   - csharp  
 products:
   - azure
-  - azure-active-directory  
+  - microsoft-entra-id  
   - dotnet
   - office-ms-graph
 description: "This sample showcases how to develop a ASP.NET MVC web application that handles sign using the Microsoft identity platform and ASP.NET OpenId Connect OWIN middleware."
@@ -24,7 +24,7 @@ description: "This sample showcases how to develop a ASP.NET MVC web application
 
 ### Overview
 
-This sample showcases how to develop a web application that handles sign using the Microsoft identity platform. It shows you how to use the new unified signing-in model that can be used to sign-in users to the app with both their [work/school account  (Azure AD account) or Microsoft account (MSA)](https://docs.microsoft.com/azure/active-directory/develop/azure-ad-endpoint-comparison). The application is implemented as an ASP.NET MVC project, while the web sign-on functionality is implemented via ASP.NET OpenId Connect OWIN middleware.
+This sample showcases how to develop a web application that handles sign using the Microsoft identity platform. It shows you how to use the new unified signing-in model that can be used to sign-in users to the app with both their [work/school account  (Microsoft Entra account) or Microsoft account (MSA)](https://docs.microsoft.com/azure/active-directory/develop/azure-ad-endpoint-comparison). The application is implemented as an ASP.NET MVC project, while the web sign-on functionality is implemented via ASP.NET OpenId Connect OWIN middleware.
 
 The sample shows how to use [MSAL.NET (Microsoft Authentication Library)](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet) to obtain an access token for [Microsoft Graph](https://graph.microsoft.com). Specifically, the sample shows how to retrieve the last email messages received by the signed in user, and how to send a mail message as the user using Microsoft Graph.
 
@@ -34,7 +34,7 @@ Finally, the sample demonstrates how to use MSAL.js v2 and MSAL .Net together in
 
 It shows how to use two new APIs, WithSpaAuthorizationCode on AcquireTokenByAuthorizationCode in MSAL .Net and acquireTokenByCode in MSAL.js v2, to authenticate a user server-side using a confidential client, and then SSO that user client-side using a second authorization code that is returned to the confidential client and redeemed by the public client client-side. This helps mitigate user experience and performance concerns that arise when performing server-side and client-side authentication for the same user, especially when third-party cookies are blocked by the browser.
 
-For more information about how the protocols work in this scenario and other scenarios, see [Authentication Scenarios for Azure AD](http://go.microsoft.com/fwlink/?LinkId=394414).
+For more information about how the protocols work in this scenario and other scenarios, see [Authentication Scenarios for Microsoft Entra ID](http://go.microsoft.com/fwlink/?LinkId=394414).
 
 For more information about Microsoft Graph, please visit the [Microsoft Graph homepage](https://graph.microsoft.io/).
 
@@ -58,10 +58,10 @@ To run this sample, you'll need:
 - An Internet connection
 - At least one of the following accounts:
 - A Microsoft Account with access to an outlook.com enabled mailbox
-- An Azure AD account with access to an Office 365 mailbox
+- a Microsoft Entra account with access to an Office 365 mailbox
 
 You can get a Microsoft Account and outlook.com mailbox for free by choosing the Sign-up option while visiting [https://www.microsoft.com/outlook-com/](https://www.microsoft.com/outlook-com/).
-You can get an Office365 office subscription, which will give you both an Azure AD account and a mailbox, at [https://products.office.com/try](https://products.office.com/try).
+You can get an Office365 office subscription, which will give you both a Microsoft Entra account and a mailbox, at [https://products.office.com/try](https://products.office.com/try).
 
 ### Step 1:  Clone or download this repository
 
@@ -75,13 +75,13 @@ or download and extract the repository .zip file.
 
 > Given that the name of the sample is quiet long, and so are the names of the referenced NuGet packages, you might want to clone it in a folder close to the root of your hard drive, to avoid file size limitations on Windows.
 
-### Step 2:  Register the sample application with your Azure Active Directory tenant
+### Step 2:  Register the sample application with your Microsoft Entra tenant
 
 There is one project in this sample. To register it, you can:
 
-- either follow the steps [Step 2: Register the sample with your Azure Active Directory tenant](#step-2-register-the-sample-with-your-azure-active-directory-tenant) and [Step 3:  Configure the sample to use your Azure AD tenant](#choose-the-azure-ad-tenant-where-you-want-to-create-your-applications)
+- either follow the steps [Step 2: Register the sample with your Microsoft Entra tenant](#step-2-register-the-sample-with-your-azure-active-directory-tenant) and [Step 3:  Configure the sample to use your Microsoft Entra tenant](#choose-the-azure-ad-tenant-where-you-want-to-create-your-applications)
 - or use PowerShell scripts that:
-  - **automatically** creates the Azure AD applications and related objects (passwords, permissions, dependencies) for you
+  - **automatically** creates the Microsoft Entra applications and related objects (passwords, permissions, dependencies) for you
   - modify the Visual Studio projects' configuration files.
 
 If you want to use this automation:
@@ -93,7 +93,7 @@ If you want to use this automation:
    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process -Force
    ```
 
-1. Run the script to create your Azure AD application and configure the code of the sample application accordinly. 
+1. Run the script to create your Microsoft Entra application and configure the code of the sample application accordinly. 
 
    ```PowerShell
    .\AppCreationScripts\Configure.ps1
@@ -107,19 +107,19 @@ If you want to use this automation:
 
 If you don't want to use this automation, follow the steps below
 
-#### Choose the Azure AD tenant where you want to create your applications
+#### Choose the Microsoft Entra tenant where you want to create your applications
 
 As a first step you'll need to:
 
-1. Sign in to the [Azure portal](https://portal.azure.com) using either a work or school account or a personal Microsoft account.
-1. If your account is present in more than one Azure AD tenant, select your profile at the top right corner in the menu on top of the page, and then **switch directory**.
-   Change your portal session to the desired Azure AD tenant.
+1. Sign in to the [Microsoft admin center](https://portal.azure.com) using either a work or school account or a personal Microsoft account.
+1. If your account is present in more than one Microsoft Entra tenant, select your profile at the top right corner in the menu on top of the page, and then **switch directory**.
+   Change your portal session to the desired Microsoft Entra tenant.
 
 As a first step you'll need to:
 
-1. Sign in to the [Azure portal](https://portal.azure.com) using either a work or school account or a personal Microsoft account.
-1. If your account is present in more than one Azure AD tenant, select your profile at the top right corner in the menu on top of the page, and then **switch directory**.
-   Change your portal session to the desired Azure AD tenant.
+1. Sign in to the [Microsoft admin center](https://portal.azure.com) using either a work or school account or a personal Microsoft account.
+1. If your account is present in more than one Microsoft Entra tenant, select your profile at the top right corner in the menu on top of the page, and then **switch directory**.
+   Change your portal session to the desired Microsoft Entra tenant.
 
 #### Register the service app (MailApp-openidconnect-v2)
 
@@ -138,7 +138,7 @@ As a first step you'll need to:
    - Select a key duration of either **In 1 year**, **In 2 years**, or **Never Expires**.
    - When you press the **Add** button, the key value will be displayed, copy, and save the value in a safe location.
    - You'll need this key later to configure the project in Visual Studio. This key value will not be displayed again, nor retrievable by any other means,
-     so record it as soon as it is visible from the Azure portal.
+     so record it as soon as it is visible from the Microsoft admin center.
 1. Select the **API permissions** section
    - Click the **Add a permission** button and then,
    - Ensure that the **Microsoft APIs** tab is selected
@@ -164,8 +164,8 @@ As a first step you'll need to:
 
 1. Open the solution in Visual Studio.
 1. Open the `web.config` file.
-1. Find the app key `ida:ClientId` and replace the existing value with the application ID (clientId) of the `MailApp-openidconnect-v2` application copied from the Azure portal.
-1. Find the app key `ida:ClientSecret` and replace the existing value with the key you saved during the creation of the `MailApp-openidconnect-v2` app, in the Azure portal.
+1. Find the app key `ida:ClientId` and replace the existing value with the application ID (clientId) of the `MailApp-openidconnect-v2` application copied from the Microsoft admin center.
+1. Find the app key `ida:ClientSecret` and replace the existing value with the key you saved during the creation of the `MailApp-openidconnect-v2` app, in the Microsoft admin center.
 
 ### Step 5:  Run the sample
 
@@ -243,7 +243,7 @@ Important things to notice:
 
 - The Authority points to the new authentication endpoint, which supports both personal and work and school accounts.
 - the list of scopes includes both entries that are used for the sign-in function (`openid, email, profile`) and for the token acquisition function (`offline_access` is required to obtain refresh_tokens as well; `Mail.Read` is required for getting access tokens that can be used when requesting to read the user's mail).
-- In this sample, the issuer validation is turned off, which means that anybody with an account can access the application. Real life applications would likely be more restrictive, limiting access only to those Azure AD tenants or Microsoft accounts associated to customers of the application itself. In other words, real life applications would likely also have a sign-up function - and the sign-in would enforce that only the users who previously signed up have access. For simplicity, this sample does not include sign up features.
+- In this sample, the issuer validation is turned off, which means that anybody with an account can access the application. Real life applications would likely be more restrictive, limiting access only to those Microsoft Entra tenants or Microsoft accounts associated to customers of the application itself. In other words, real life applications would likely also have a sign-up function - and the sign-in would enforce that only the users who previously signed up have access. For simplicity, this sample does not include sign up features.
 
 ### Initial token acquisition
 
@@ -378,7 +378,7 @@ This project has one WebApp / Web API projects. To deploy them to Azure Web Site
 
 ### Create and publish the `openidconnect-v2` to an Azure Web Site
 
-1. Sign in to the [Azure portal](https://portal.azure.com).
+1. Sign in to the [Microsoft admin center](https://portal.azure.com).
 1. Click `Create a resource` in the top left-hand corner, select **Web** --> **Web App**, and give your web site a name, for example, `openidconnect-v2-contoso.azurewebsites.net`.
 1. Thereafter select the `Subscription`, `Resource Group`, `App service plan and Location`. `OS` will be **Windows** and `Publish` will be **Code**.
 1. Click `Create` and wait for the App Service to be created.
@@ -392,8 +392,8 @@ This project has one WebApp / Web API projects. To deploy them to Azure Web Site
 
 ### Update the Active Directory tenant application registration for `openidconnect-v2`
 
-1. Navigate back to to the [Azure portal](https://portal.azure.com).
-In the left-hand navigation pane, select the **Azure Active Directory** service, and then select **App registrations (Preview)**.
+1. Navigate back to to the [Microsoft admin center](https://portal.azure.com).
+In the left-hand navigation pane, select the **Microsoft Entra ID** service, and then select **App registrations (Preview)**.
 1. In the resultant screen, select the `openidconnect-v2` application.
 1. From the *Branding* menu, update the **Home page URL**, to the address of your service, for example [https://openidconnect-v2-contoso.azurewebsites.net](https://openidconnect-v2-contoso.azurewebsites.net). Save the configuration.
 1. Add the same URL in the list of values of the *Authentication -> Redirect URIs* menu. If you have multiple redirect urls, make sure that there a new entry using the App service's Uri for each redirect url.
@@ -425,9 +425,9 @@ For more information, visit the following links:
   - [Customizing Token cache serialization](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/token-cache-serialization)
   - [Acquiring a token on behalf of a user Service to Services calls](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/on-behalf-of) 
 
-- Articles about the Azure AD V2 endpoint [http://aka.ms/aaddevv2](http://aka.ms/aaddevv2), with a focus on:
+- Articles about the Microsoft Entra ID V2 endpoint [http://aka.ms/aaddevv2](http://aka.ms/aaddevv2), with a focus on:
 
-  - [Azure Active Directory v2.0 and OAuth 2.0 On-Behalf-Of flow](https://docs.microsoft.com/azure/active-directory/develop/active-directory-v2-protocols-oauth-on-behalf-of)
+  - [Microsoft Entra ID v2.0 and OAuth 2.0 On-Behalf-Of flow](https://docs.microsoft.com/azure/active-directory/develop/active-directory-v2-protocols-oauth-on-behalf-of)
   - [Incremental and dynamic consent](https://docs.microsoft.com/azure/active-directory/develop/active-directory-v2-compare#incremental-and-dynamic-consent)
 
 - Articles about the Microsoft Graph
