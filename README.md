@@ -156,7 +156,7 @@ If you want to use this automation:
    .\AppCreationScripts\Configure.ps1
    ```
 
-   > Remember to make the manual change in the manifest for the `signInAudience` as explained below.
+   > Remember to make the manual change in the manifest for the `signInAudience` as explained above in [Option 1, Step C:  Change the Applications Manifest](#step-c--change-the-applications-manifest-to-enable-both-work-and-school-and-microsoft-accounts).
 
    > Other ways of running the scripts are described in [App Creation Scripts](./AppCreationScripts/AppCreationScripts.md)
 
