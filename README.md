@@ -79,10 +79,67 @@ or download and extract the repository .zip file.
 
 There is one project in this sample. To register it, you can:
 
-- either follow the steps [Step 2: Register the sample with your Microsoft Entra tenant](#step-2-register-the-sample-with-your-azure-active-directory-tenant) and [Step 3:  Configure the sample to use your Microsoft Entra tenant](#choose-the-azure-ad-tenant-where-you-want-to-create-your-applications)
-- or use PowerShell scripts that:
+- either follow the steps [Option 1: Manually Configure your Microsoft Entra Application](#option-1-manually-configure-microsoft-entra-application)
+- or following [Option 2: Use Powershell to automatically configure your Microsoft Entra applications](#option-2-use-powershell-to-automatically-configure-your-microsoft-entra-applications) that:
   - **automatically** creates the Microsoft Entra applications and related objects (passwords, permissions, dependencies) for you
   - modify the Visual Studio projects' configuration files.
+
+#### Option 1:  Manually Configure Microsoft Entra Application
+
+##### Step A:  Choose the Microsoft Entra tenant where you want to create your applications
+
+As a first step you'll need to:
+
+1. Sign in to the [Microsoft Entra admin center](https://entra.microsoft.com) using either a work or school account or a personal Microsoft account.
+1. If your account is present in more than one Microsoft Entra tenant, select your profile at the top right corner in the menu on top of the page, and then **switch directory**.
+   Change your portal session to the desired Microsoft Entra tenant.
+
+##### Step B:  Register the service app (MailApp-openidconnect-v2)
+
+1. Navigate to the Microsoft identity platform for developers [App registrations](https://go.microsoft.com/fwlink/?linkid=2083908) page.
+1. Select **New registration**.
+1. When the **Register an application page** appears, enter your application's registration information:
+   - In the **Name** section, enter a meaningful application name that will be displayed to users of the app, for example `MailApp-openidconnect-v2`.
+   - Change **Supported account types** to **Accounts in any organizational directory and personal Microsoft accounts (e.g. Skype, Xbox, Outlook.com)**.
+   - In the Redirect URI (optional) section, select **Web** in the combo-box and enter the following redirect URIs: `https://localhost:44326/`.
+1. Select **Register** to create the application.
+1. On the app **Overview** page, find the **Application (client) ID** value and record it for later. You'll need it to configure the Visual Studio configuration file for this project.
+1. Select **Save**.
+1. From the **Certificates & secrets** page, in the **Client secrets** section, choose **New client secret**:
+   - Type a key description (of instance `app secret`),
+   - Select a key duration of either **In 1 year**, **In 2 years**, or **Never Expires**.
+   - When you press the **Add** button, the key value will be displayed, copy, and save the value in a safe location.
+   - You'll need this key later to configure the project in Visual Studio. This key value will not be displayed again, nor retrievable by any other means,
+     so record it as soon as it is visible from the Microsoft Entra admin center.
+1. Select the **API permissions** section
+   - Click the **Add a permission** button and then,
+   - Ensure that the **Microsoft APIs** tab is selected
+   - In the *Commonly used Microsoft APIs* section, click on **Microsoft Graph**
+   - In the **Delegated permissions** section, ensure that the right permissions are checked: **openid**, **profile**, **offline_access**, **Mail.Read**, **User.Read**. Use the search box if necessary.
+   - Select the **Add permissions** button
+
+##### Step C:  Change the application's manifest to enable both Work and School and Microsoft Accounts 
+
+1. Select the **Manifest** section for your app.
+1. Search for **signInAudience** and make sure it's set to **AzureADandPersonalMicrosoftAccount**
+
+     ```JSON
+          "signInUrl": null,
+          "signInAudience": "AzureADandPersonalMicrosoftAccount",
+     ```
+
+1. Click **Save** to save the app manifest.
+
+##### Step D:  Configure the service project
+
+> Note: if you used the setup scripts, the changes below will have been applied for you
+
+1. Open the solution in Visual Studio.
+1. Open the `web.config` file.
+1. Find the app key `ida:ClientId` and replace the existing value with the application ID (clientId) of the `MailApp-openidconnect-v2` application copied from the Microsoft Entra admin center.
+1. Find the app key `ida:ClientSecret` and replace the existing value with the key you saved during the creation of the `MailApp-openidconnect-v2` app, in the Microsoft Entra admin center.
+
+#### Option 2:  Use Powershell to automatically configure your Microsoft Entra Application
 
 If you want to use this automation:
 
@@ -99,75 +156,13 @@ If you want to use this automation:
    .\AppCreationScripts\Configure.ps1
    ```
 
-   > Remember to make the manual change in the manifest for the `signInAudience` as explained below.
+   > Remember to make the manual change in the manifest for the `signInAudience` as explained above in [Option 1, Step C:  Change the Applications Manifest](#step-c--change-the-applications-manifest-to-enable-both-work-and-school-and-microsoft-accounts).
 
    > Other ways of running the scripts are described in [App Creation Scripts](./AppCreationScripts/AppCreationScripts.md)
 
 1. Open the Visual Studio solution and click start
 
-If you don't want to use this automation, follow the steps below
-
-#### Choose the Microsoft Entra tenant where you want to create your applications
-
-As a first step you'll need to:
-
-1. Sign in to the [Microsoft Entra admin center](https://entra.microsoft.com) using either a work or school account or a personal Microsoft account.
-1. If your account is present in more than one Microsoft Entra tenant, select your profile at the top right corner in the menu on top of the page, and then **switch directory**.
-   Change your portal session to the desired Microsoft Entra tenant.
-
-As a first step you'll need to:
-
-1. Sign in to the [Microsoft Entra admin center](https://entra.microsoft.com) using either a work or school account or a personal Microsoft account.
-1. If your account is present in more than one Microsoft Entra tenant, select your profile at the top right corner in the menu on top of the page, and then **switch directory**.
-   Change your portal session to the desired Microsoft Entra tenant.
-
-#### Register the service app (MailApp-openidconnect-v2)
-
-1. Navigate to the Microsoft identity platform for developers [App registrations](https://go.microsoft.com/fwlink/?linkid=2083908) page.
-1. Select **New registration**.
-1. When the **Register an application page** appears, enter your application's registration information:
-   - In the **Name** section, enter a meaningful application name that will be displayed to users of the app, for example `MailApp-openidconnect-v2`.
-   - Change **Supported account types** to **Accounts in any organizational directory and personal Microsoft accounts (e.g. Skype, Xbox, Outlook.com)**.
-   - In the Redirect URI (optional) section, select **Web** in the combo-box and enter the following redirect URIs: `https://localhost:44326/`.
-1. Select **Register** to create the application.
-1. On the app **Overview** page, find the **Application (client) ID** value and record it for later. You'll need it to configure the Visual Studio configuration file for this project.
-1. Select **Save**.
-1. From the **Certificates & secrets** page, in the **Client secrets** section, choose **New client secret**:
-
-   - Type a key description (of instance `app secret`),
-   - Select a key duration of either **In 1 year**, **In 2 years**, or **Never Expires**.
-   - When you press the **Add** button, the key value will be displayed, copy, and save the value in a safe location.
-   - You'll need this key later to configure the project in Visual Studio. This key value will not be displayed again, nor retrievable by any other means,
-     so record it as soon as it is visible from the Microsoft Entra admin center.
-1. Select the **API permissions** section
-   - Click the **Add a permission** button and then,
-   - Ensure that the **Microsoft APIs** tab is selected
-   - In the *Commonly used Microsoft APIs* section, click on **Microsoft Graph**
-   - In the **Delegated permissions** section, ensure that the right permissions are checked: **openid**, **profile**, **offline_access**, **Mail.Read**, **User.Read**. Use the search box if necessary.
-   - Select the **Add permissions** button
-
-#### Change the application's manifest to enable both Work and School and Microsoft Accounts 
-
-1. Select the **Manifest** section for your app.
-1. Search for **signInAudience** and make sure it's set to **AzureADandPersonalMicrosoftAccount**
-
-     ```JSON
-          "signInUrl": null,
-          "signInAudience": "AzureADandPersonalMicrosoftAccount",
-     ```
-
-1. Click **Save** to save the app manifest.
-
-#### Configure the service project
-
-> Note: if you used the setup scripts, the changes below will have been applied for you
-
-1. Open the solution in Visual Studio.
-1. Open the `web.config` file.
-1. Find the app key `ida:ClientId` and replace the existing value with the application ID (clientId) of the `MailApp-openidconnect-v2` application copied from the Microsoft Entra admin center.
-1. Find the app key `ida:ClientSecret` and replace the existing value with the key you saved during the creation of the `MailApp-openidconnect-v2` app, in the Microsoft Entra admin center.
-
-### Step 5:  Run the sample
+### Step 3:  Run the sample
 
 Clean the solution, rebuild the solution, and run it.
 
